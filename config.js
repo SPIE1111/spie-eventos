@@ -8,7 +8,7 @@ window.EVENT_CONFIG = {
   EVENT_ID: 'evento-2026',     // debe coincidir con ev_event.id
 
   // URL pública de la app (la que lleva el QR). Si se deja vacía se usa la URL actual.
-  APP_URL: 'https://spie-eventos.github.io/',
+  APP_URL: 'https://spie1111.github.io/spie-eventos/',
 
   // Apariencia
   ACCENT: '#00a19a',           // color principal de botones y gráficos
