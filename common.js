@@ -79,6 +79,10 @@
       async signIn(email, password) { ok(await sb.auth.signInWithPassword({ email, password })); return this.uid(); },
       async signOut() { await sb.auth.signOut(); },
       async currentEmail() { const { data } = await sb.auth.getSession(); return data.session?.user?.email || null; },
+      async claimAdmin(pin) {
+        await this.ensureAnon();
+        return !!ok(await sb.rpc('ev_claim_admin', { p_pin: pin }));
+      },
       async isAdmin() {
         const id = await this.uid(); if (!id) return false;
         const { data } = await sb.from('ev_admins').select('user_id').eq('user_id', id).maybeSingle();
@@ -188,6 +192,7 @@
       async signIn() { return uidv; },
       async signOut() {},
       async currentEmail() { return 'demo@local'; },
+      async claimAdmin() { return true; },
       async isAdmin() { return true; },
       async select(table, o = {}) {
         let rows = read(table);
