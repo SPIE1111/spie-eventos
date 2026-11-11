@@ -98,12 +98,11 @@
 
 <section id="login" hidden>
   <form class="card stack" id="loginForm">
-    <div><div class="eyebrow">Panel del moderador</div><h1 style="font-size:24px;margin-top:6px">Inicia sesión</h1></div>
-    <label class="field" for="lEmail"><span>Correo</span><input id="lEmail" type="email" autocomplete="username" required></label>
-    <label class="field" for="lPass"><span>Contraseña</span><input id="lPass" type="password" autocomplete="current-password" required></label>
+    <div><div class="eyebrow">Panel del moderador</div><h1 style="font-size:24px;margin-top:6px">Escribe el PIN</h1></div>
+    <label class="field" for="lPin"><span>PIN de moderador</span><input id="lPin" type="password" inputmode="numeric" autocomplete="off" minlength="4" required></label>
     <button class="btn block" type="submit" id="lBtn">Entrar</button>
     <p class="small" id="lErr" style="color:var(--danger)" hidden></p>
-    <p class="muted small">Solo usuarios registrados como moderadores en Supabase (tabla ev_admins).</p>
+    <p class="muted small">El PIN se define en Supabase con el archivo supabase/admin-pin.sql.</p>
   </form>
 </section>
 
@@ -316,10 +315,10 @@
   $('#loginForm').addEventListener('submit', async (e) => {
     e.preventDefault(); const err = $('#lErr'); err.hidden = true; $('#lBtn').disabled = true;
     try {
-      await db.signIn($('#lEmail').value.trim(), $('#lPass').value);
-      if (!(await db.isAdmin())) { await db.signOut(); throw new Error('Este usuario no está registrado como moderador.'); }
+      const okPin = await db.claimAdmin($('#lPin').value.trim());
+      if (!okPin) throw new Error('PIN incorrecto.');
       $('#login').hidden = true; start();
-    } catch (x) { err.textContent = /Invalid login/i.test(x.message) ? 'Correo o contraseña incorrectos.' : errMsg(x); err.hidden = false; }
+    } catch (x) { err.textContent = /function .*ev_claim_admin|Could not find the function/i.test(x.message) ? 'Falta ejecutar supabase/admin-pin.sql en Supabase.' : errMsg(x); err.hidden = false; }
     $('#lBtn').disabled = false;
   });
   $('#logout').addEventListener('click', async () => { await db.signOut(); location.reload(); });
@@ -342,7 +341,7 @@
   };
   async function start() {
     $('#shell').hidden = false;
-    $('#whoAdm').textContent = await db.currentEmail() || '';
+    $('#whoAdm').textContent = EV.DEMO ? 'demo' : 'Moderador';
     try { await Promise.all(Object.values(L).map((f) => f())); } catch (e) { toast(errMsg(e), 'err'); }
     if (!S.event) {
       // crea el evento si no existe aún
