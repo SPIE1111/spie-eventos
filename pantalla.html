@@ -7,32 +7,33 @@
 <link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100,600;100,700;100,800;112,800;125,900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="styles.css">
 <style>
   /* Pantalla de proyección: siempre oscura, escala con el ancho de la ventana */
-  :root { --bg: #08111a; --surface: #0f1c28; --surface-2: #182a3a; --fg: #eef3f7; --muted: #8fa3b5; --line: #22374a; color-scheme: dark; }
+  :root { --bg: #0b1640; --surface: #12205a; --surface-2: #1b2b6b; --fg: #ffffff; --muted: #aab3d8; --line: #2b3b7d; --accent-text: #ffad40; --accent-soft: #3d2c14; --bar-rest: #4a63c4; color-scheme: dark; }
+  body::after { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: .35em; background: var(--accent); z-index: 4; }
   html, body { height: 100%; overflow: hidden; }
-  body { background: var(--bg); color: var(--fg); font-size: clamp(14px, 1.15vw, 26px); }
+  body { background: radial-gradient(120% 90% at 100% 0%, #1a2c78 0%, var(--bg) 55%) fixed, var(--bg); color: var(--fg); font-size: clamp(14px, 1.15vw, 26px); }
   .screen { height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 1.2em; padding: 1.4em max(1.6em, env(safe-area-inset-right, 0px)) 1.4em max(1.6em, env(safe-area-inset-left, 0px)); }
 
   .top { display: flex; align-items: center; gap: 1.2em; }
-  .top .ev { font: 700 1em var(--f-display); color: var(--muted); letter-spacing: .02em; }
-  .top h1 { font-size: 1.9em; font-weight: 800; font-stretch: 112%; }
+  .top .ev { font: 600 .85em var(--f-display); color: #ffb347; letter-spacing: .14em; text-transform: uppercase; }
+  .top h1 { font-size: 1.9em; font-weight: 700; }
   .top .who { color: var(--muted); font-size: 1em; margin-top: .2em; }
   .top .right { margin-left: auto; display: flex; align-items: center; gap: 1em; }
   .clock { font: 600 1.6em var(--f-mono); font-variant-numeric: tabular-nums; }
   .stat { text-align: right; }
   .stat b { font: 800 1.6em var(--f-display); display: block; line-height: 1; font-variant-numeric: tabular-nums; }
   .stat span { font-size: .75em; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
-  .logo { height: 2.4em; width: auto; }
+  .logo { height: 2.6em; width: auto; border-radius: .2em; }
 
   .body { display: grid; grid-template-columns: 1.65fr 1fr; gap: 1.2em; min-height: 0; }
   .body.solo { grid-template-columns: 1fr; }
   .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 1em; padding: 1.6em; min-height: 0; display: flex; flex-direction: column; gap: 1em; overflow: hidden; position: relative; }
   .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 1em; }
   .panel-head .eyebrow { font-size: .8em; }
-  .stage-q { font-size: 2.3em; font-weight: 800; line-height: 1.12; }
+  .stage-q { font-size: 2.3em; font-weight: 700; line-height: 1.12; }
   .stage-res { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
   .results.big { --bar-h: 1.5em; font-size: 1.25em; }
   .results.big .bars { gap: 1.1em; }
@@ -57,16 +58,16 @@
   .sqs .v small { display: block; font: 600 .45em var(--f-body); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-top: .3em; }
   .sqs p { font-size: 1.08em; line-height: 1.35; }
   .sqs .by { color: var(--muted); font-size: .8em; margin-top: .3em; }
-  .sqs li.top1 { background: color-mix(in srgb, var(--accent) 18%, var(--surface-2)); }
+  .sqs li.top1 { background: var(--surface-2); box-shadow: inset .3em 0 0 var(--accent); }
   .solo .sqs { display: grid; grid-template-columns: 1fr 1fr; }
   .solo .sqs p { font-size: 1.35em; }
   @keyframes slidein { from { opacity: 0; transform: translateY(10px) } }
 
-  .qr-card { display: flex; gap: 1em; align-items: center; background: #fff; color: #0d1b2a; border-radius: .9em; padding: .9em; margin-top: auto; }
+  .qr-card { display: flex; gap: 1em; align-items: center; background: #fff; color: #0f1e5a; border-left: .35em solid var(--accent); border-radius: .9em; padding: .9em; margin-top: auto; }
   .qr-card .qr { width: 7em; height: 7em; flex: none; }
   .qr-card .qr img, .qr-card .qr canvas { width: 100% !important; height: 100% !important; }
   .qr-card b { font: 800 1.3em var(--f-display); display: block; }
-  .qr-card span { font: 500 .8em var(--f-mono); color: #5b6b7a; word-break: break-all; }
+  .qr-card span { font: 500 .8em var(--f-body); color: #56608a; word-break: break-all; }
 
   /* galería */
   .slide { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr; opacity: 0; transition: opacity 1s ease; }
@@ -80,7 +81,7 @@
   .mosaic div { background-size: cover; background-position: center; border-radius: .5em; animation: slidein .6s ease both; }
 
   .idle { flex: 1; display: grid; place-items: center; text-align: center; color: var(--muted); }
-  .idle h2 { color: var(--fg); font-size: 2.4em; font-weight: 800; font-stretch: 112%; margin-bottom: .3em; }
+  .idle h2 { color: var(--fg); font-size: 2.4em; font-weight: 800;  margin-bottom: .3em; }
 
   .fsbtn { position: fixed; right: max(1em, env(safe-area-inset-right, 0px)); bottom: max(1em, env(safe-area-inset-bottom, 0px)); z-index: 5; opacity: .0; transition: opacity .3s; }
   body:hover .fsbtn { opacity: .85; }
@@ -95,7 +96,6 @@
 <body>
 <div class="screen">
   <div class="top">
-    <img class="logo" id="logo" alt="" hidden>
     <div class="grow">
       <div class="ev" id="evName"></div>
       <h1 id="sTitle">Cargando…</h1>
@@ -105,6 +105,7 @@
       <div class="stat"><b id="nPeople">0</b><span>participantes</span></div>
       <span class="pill" id="conn">Conectando</span>
       <div class="clock" id="clock"></div>
+      <img class="logo" id="logo" src="img/logo-navy.png" alt="SPIE">
     </div>
   </div>
   <div class="body" id="body">
@@ -129,10 +130,9 @@
   const { $, $$, esc, fmt, EID } = EV;
   const db = EV.init({ storageKey: 'ev-screen-' + EID });
   const S = { event: null, sessions: [], questions: [], answers: [], sq: [], photos: [], people: 0, rot: 0, slide: 0 };
-  if (EV.C.LOGO) { $('#logo').src = EV.C.LOGO; $('#logo').hidden = false; }
 
   EV.onStatus((s) => { const c = $('#conn'); c.className = 'pill ' + (s === 'live' ? 'live' : ''); c.textContent = s === 'live' ? 'En vivo' : s === 'demo' ? 'Demo' : 'Reconectando'; });
-  const tick = () => { $('#clock').textContent = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }); };
+  const tick = () => { $('#clock').textContent = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); };
   tick(); setInterval(tick, 10000);
 
   const url = EV.appUrl();
@@ -194,7 +194,7 @@
     document.title = (e.name || 'Evento') + ' · Pantalla';
     $('#evName').textContent = e.name || '';
     $('#sTitle').textContent = c ? c.title : (e.name || 'Bienvenidos');
-    $('#sWho').textContent = c ? [c.speaker, c.speaker_role].filter(Boolean).join(' · ') : (e.subtitle || '');
+    $('#sWho').textContent = c ? EV.fmt.sessLine(c) : (e.subtitle || '');
     $('#nPeople').textContent = S.people;
     const m = mode();
     const body = $('#body');
