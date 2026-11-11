@@ -3,8 +3,8 @@
 //  Deja SUPABASE_URL vacío para usar el MODO DEMO (datos locales en el navegador).
 // =====================================================================
 window.EVENT_CONFIG = {
-  SUPABASE_URL: '',            // ej. 'https://abcdxyz.supabase.co'
-  SUPABASE_ANON_KEY: '',       // Project Settings → API → anon public
+  SUPABASE_URL: 'https://hjaucllogdwzeqxxpvpo.supabase.co',            // ej. 'https://abcdxyz.supabase.co'
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqYXVjbGxvZ2R3emVxeHhwdnBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0MDc4MzksImV4cCI6MjEwOTk4MzgzOX0.aeVc3PQ3eMLw3xDEIqhofthAS0hVoeaAKFmrTZkSc2M',       // Project Settings → API → anon public
   EVENT_ID: 'evento-2026',     // debe coincidir con ev_event.id
 
   // URL pública de la app (la que lleva el QR). Si se deja vacía se usa la URL actual.
