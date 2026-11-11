@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pantalla del evento</title>
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100,600;100,700;100,800;112,800;125,900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* Pantalla de proyección: siempre oscura, escala con el ancho de la ventana */
+  :root { --bg: #08111a; --surface: #0f1c28; --surface-2: #182a3a; --fg: #eef3f7; --muted: #8fa3b5; --line: #22374a; color-scheme: dark; }
+  html, body { height: 100%; overflow: hidden; }
+  body { background: var(--bg); color: var(--fg); font-size: clamp(14px, 1.15vw, 26px); }
+  .screen { height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 1.2em; padding: 1.4em max(1.6em, env(safe-area-inset-right, 0px)) 1.4em max(1.6em, env(safe-area-inset-left, 0px)); }
+
+  .top { display: flex; align-items: center; gap: 1.2em; }
+  .top .ev { font: 700 1em var(--f-display); color: var(--muted); letter-spacing: .02em; }
+  .top h1 { font-size: 1.9em; font-weight: 800; font-stretch: 112%; }
+  .top .who { color: var(--muted); font-size: 1em; margin-top: .2em; }
+  .top .right { margin-left: auto; display: flex; align-items: center; gap: 1em; }
+  .clock { font: 600 1.6em var(--f-mono); font-variant-numeric: tabular-nums; }
+  .stat { text-align: right; }
+  .stat b { font: 800 1.6em var(--f-display); display: block; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: .75em; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .logo { height: 2.4em; width: auto; }
+
+  .body { display: grid; grid-template-columns: 1.65fr 1fr; gap: 1.2em; min-height: 0; }
+  .body.solo { grid-template-columns: 1fr; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 1em; padding: 1.6em; min-height: 0; display: flex; flex-direction: column; gap: 1em; overflow: hidden; position: relative; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 1em; }
+  .panel-head .eyebrow { font-size: .8em; }
+  .stage-q { font-size: 2.3em; font-weight: 800; line-height: 1.12; }
+  .stage-res { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
+  .results.big { --bar-h: 1.5em; font-size: 1.25em; }
+  .results.big .bars { gap: 1.1em; }
+  .results.big .bar-label { margin-bottom: .35em; }
+  .results.big .bar-val { font-size: .95em; }
+  .results.big .cols { height: 11em; gap: .8em; }
+  .results.big .col-track { max-width: 4em; }
+  .results.big .avg-num { font-size: 4.4em; }
+  .results.big .stars { font-size: 1.6em; }
+  .results.big .r-count { font-size: .85em; }
+  .results.big .cloud { min-height: 50vh; }
+  .results.big .texts li { font-size: 1.05em; }
+  .bar-row.mine .bar-text::after { content: none; }
+  .rotor { display: flex; gap: .4em; }
+  .rotor i { width: .55em; height: .55em; border-radius: 50%; background: var(--line); }
+  .rotor i.on { background: var(--accent); }
+
+  /* preguntas al ponente */
+  .sqs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .7em; overflow: hidden; }
+  .sqs li { display: grid; grid-template-columns: 3.2em 1fr; gap: .9em; align-items: start; background: var(--surface-2); border-radius: .8em; padding: .9em 1em; animation: slidein .5s ease both; }
+  .sqs .v { text-align: center; font: 800 1.5em var(--f-display); line-height: 1; color: var(--accent); }
+  .sqs .v small { display: block; font: 600 .45em var(--f-body); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-top: .3em; }
+  .sqs p { font-size: 1.08em; line-height: 1.35; }
+  .sqs .by { color: var(--muted); font-size: .8em; margin-top: .3em; }
+  .sqs li.top1 { background: color-mix(in srgb, var(--accent) 18%, var(--surface-2)); }
+  .solo .sqs { display: grid; grid-template-columns: 1fr 1fr; }
+  .solo .sqs p { font-size: 1.35em; }
+  @keyframes slidein { from { opacity: 0; transform: translateY(10px) } }
+
+  .qr-card { display: flex; gap: 1em; align-items: center; background: #fff; color: #0d1b2a; border-radius: .9em; padding: .9em; margin-top: auto; }
+  .qr-card .qr { width: 7em; height: 7em; flex: none; }
+  .qr-card .qr img, .qr-card .qr canvas { width: 100% !important; height: 100% !important; }
+  .qr-card b { font: 800 1.3em var(--f-display); display: block; }
+  .qr-card span { font: 500 .8em var(--f-mono); color: #5b6b7a; word-break: break-all; }
+
+  /* galería */
+  .slide { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr; opacity: 0; transition: opacity 1s ease; }
+  .slide.on { opacity: 1; }
+  .slide .bgimg { position: absolute; inset: 0; background-size: cover; background-position: center; filter: blur(40px) brightness(.45); transform: scale(1.2); }
+  .slide img { position: relative; max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
+  .slide .cap { position: absolute; left: 1.2em; bottom: 1.2em; right: 1.2em; background: rgb(8 17 26 / .72); backdrop-filter: blur(6px); border-radius: .7em; padding: .7em 1em; }
+  .slide .cap b { font-family: var(--f-display); font-size: 1.15em; }
+  .gal { padding: 0; }
+  .mosaic { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: .4em; flex: 1; min-height: 0; }
+  .mosaic div { background-size: cover; background-position: center; border-radius: .5em; animation: slidein .6s ease both; }
+
+  .idle { flex: 1; display: grid; place-items: center; text-align: center; color: var(--muted); }
+  .idle h2 { color: var(--fg); font-size: 2.4em; font-weight: 800; font-stretch: 112%; margin-bottom: .3em; }
+
+  .fsbtn { position: fixed; right: max(1em, env(safe-area-inset-right, 0px)); bottom: max(1em, env(safe-area-inset-bottom, 0px)); z-index: 5; opacity: .0; transition: opacity .3s; }
+  body:hover .fsbtn { opacity: .85; }
+  @media (max-width: 760px) {
+    html, body { overflow: auto; height: auto; }
+    .body { grid-template-columns: 1fr; }
+    .solo .sqs { grid-template-columns: 1fr; }
+    body { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="top">
+    <img class="logo" id="logo" alt="" hidden>
+    <div class="grow">
+      <div class="ev" id="evName"></div>
+      <h1 id="sTitle">Cargando…</h1>
+      <div class="who" id="sWho"></div>
+    </div>
+    <div class="right">
+      <div class="stat"><b id="nPeople">0</b><span>participantes</span></div>
+      <span class="pill" id="conn">Conectando</span>
+      <div class="clock" id="clock"></div>
+    </div>
+  </div>
+  <div class="body" id="body">
+    <section class="panel" id="stage"></section>
+    <aside class="panel" id="side">
+      <div class="panel-head"><span class="eyebrow">Preguntas al ponente</span><span class="pill" id="sqCount"></span></div>
+      <ul class="sqs" id="sqs"></ul>
+      <div class="qr-card"><div class="qr" id="qr"></div><div><b>Escanea y participa</b><span id="qrUrl"></span></div></div>
+    </aside>
+  </div>
+</div>
+<button class="btn soft sm fsbtn" id="fs" type="button">Pantalla completa</button>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="config.js"></script>
+<script src="icons.js"></script>
+<script src="common.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { $, $$, esc, fmt, EID } = EV;
+  const db = EV.init({ storageKey: 'ev-screen-' + EID });
+  const S = { event: null, sessions: [], questions: [], answers: [], sq: [], photos: [], people: 0, rot: 0, slide: 0 };
+  if (EV.C.LOGO) { $('#logo').src = EV.C.LOGO; $('#logo').hidden = false; }
+
+  EV.onStatus((s) => { const c = $('#conn'); c.className = 'pill ' + (s === 'live' ? 'live' : ''); c.textContent = s === 'live' ? 'En vivo' : s === 'demo' ? 'Demo' : 'Reconectando'; });
+  const tick = () => { $('#clock').textContent = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }); };
+  tick(); setInterval(tick, 10000);
+
+  const url = EV.appUrl();
+  EV.qr($('#qr'), url, 256);
+  $('#qrUrl').textContent = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+  const cur = () => S.sessions.find((s) => s.id === (S.event && S.event.current_session_id)) || null;
+  const qIds = () => { const c = cur(); return S.questions.filter((q) => q.scope === 'sesion' && c && q.session_id === c.id).map((q) => q.id); };
+
+  const L = {
+    async ev_event() { S.event = await db.one('ev_event', { id: EID }); },
+    async ev_sessions() { S.sessions = await db.select('ev_sessions', { order: ['sort', 'asc'] }); },
+    async ev_questions() { S.questions = await db.select('ev_questions', { order: ['sort', 'asc'] }); },
+    async ev_answers() { S.answers = await db.select('ev_answers', { in: ['question_id', qIds()] }); },
+    async ev_speaker_q() { S.sq = await db.select('ev_speaker_q', { order: ['votes', 'desc'] }); },
+    async ev_photos() { S.photos = (await db.select('ev_photos', { order: ['created_at', 'desc'], limit: 60 })).filter((p) => !p.hidden); },
+    async ev_participants() {
+      try { S.people = await db.participantCount(); } catch { S.people = 0; }
+    }
+  };
+  async function loadAll() {
+    await Promise.all([L.ev_event(), L.ev_sessions(), L.ev_questions(), L.ev_speaker_q(), L.ev_photos(), L.ev_participants()]);
+    await L.ev_answers();
+    render();
+  }
+  const pend = new Set();
+  const flush = EV.debounce(async () => {
+    const t = Array.from(pend); pend.clear();
+    try { for (const n of t) await L[n](); if (t.includes('ev_event') || t.includes('ev_questions')) await L.ev_answers(); } catch (e) { console.warn(e); }
+    render();
+  }, 300);
+  db.subscribe(['ev_event', 'ev_sessions', 'ev_questions', 'ev_answers', 'ev_speaker_q', 'ev_photos', 'ev_participants'], (t, p) => {
+    if (t === 'ev_answers' && p && p.new && p.new.id) {
+      if (!qIds().includes(p.new.question_id)) return;
+      const i = S.answers.findIndex((a) => a.id === p.new.id || (a.question_id === p.new.question_id && a.participant_id === p.new.participant_id));
+      if (i >= 0) S.answers[i] = p.new; else S.answers.push(p.new);
+      updateStageResults(); return;
+    }
+    if (L[t]) { pend.add(t); flush(); }
+  });
+
+  /* -------- modo de pantalla -------- */
+  function mode() {
+    const h = location.hash.replace('#', '');
+    if (['auto', 'pregunta', 'ponente', 'galeria'].includes(h)) return h;
+    return (S.event && S.event.screen_mode) || 'auto';
+  }
+  window.addEventListener('hashchange', render);
+
+  function stageQuestions() {
+    const c = cur(); if (!c) return [];
+    const pinned = S.event && S.event.screen_question_id && S.questions.find((q) => q.id === S.event.screen_question_id);
+    if (pinned) return [pinned];
+    return S.questions.filter((q) => q.scope === 'sesion' && q.session_id === c.id && q.is_open);
+  }
+
+  function render() {
+    const e = S.event || {}; const c = cur();
+    document.title = (e.name || 'Evento') + ' · Pantalla';
+    $('#evName').textContent = e.name || '';
+    $('#sTitle').textContent = c ? c.title : (e.name || 'Bienvenidos');
+    $('#sWho').textContent = c ? [c.speaker, c.speaker_role].filter(Boolean).join(' · ') : (e.subtitle || '');
+    $('#nPeople').textContent = S.people;
+    const m = mode();
+    const body = $('#body');
+    body.classList.toggle('solo', m !== 'auto');
+    $('#side').hidden = m !== 'auto';
+    renderSide(); renderStage(m);
+  }
+
+  function sqList(limit) {
+    const c = cur();
+    return S.sq.filter((q) => c && q.session_id === c.id && q.status === 'approved')
+      .sort((a, b) => b.votes - a.votes || (a.created_at > b.created_at ? 1 : -1)).slice(0, limit);
+  }
+  function sqHTML(list) {
+    return list.map((q, i) => `<li class="${i === 0 && q.votes > 0 ? 'top1' : ''}"><div class="v">${q.votes}<small>votos</small></div>
+      <div><p>${esc(q.text)}</p><div class="by">${q.anonymous ? 'Anónimo' : esc(q.participant_name || '')}</div></div></li>`).join('');
+  }
+  function renderSide() {
+    const list = sqList(5);
+    const sig = list.map((q) => q.id + ':' + q.votes).join();
+    const ul = $('#sqs');
+    if (ul.dataset.sig !== sig) { ul.dataset.sig = sig; ul.innerHTML = list.length ? sqHTML(list) : '<li style="grid-template-columns:1fr" class="muted">Envía tu pregunta desde la app y vota las que más te interesen.</li>'; }
+    const n = sqList(999).length; $('#sqCount').textContent = n ? `${n}` : '';
+  }
+
+  let stageKey = '';
+  function renderStage(m) {
+    const st = $('#stage');
+    if (m === 'ponente') {
+      const list = sqList(8); const key = 'ponente:' + list.map((q) => q.id + q.votes).join();
+      if (key === stageKey) return; stageKey = key; st.className = 'panel';
+      st.innerHTML = `<div class="panel-head"><span class="eyebrow">Preguntas al ponente · más votadas</span><div class="qr-card" style="margin:0;padding:.5em"><div class="qr" id="qr2" style="width:4.5em;height:4.5em"></div><div><b style="font-size:1em">Envía la tuya</b></div></div></div>
+        <ul class="sqs">${list.length ? sqHTML(list) : '<li style="grid-template-columns:1fr" class="muted">Aún no hay preguntas aprobadas.</li>'}</ul>`;
+      EV.qr($('#qr2'), url, 160); return;
+    }
+    if (m === 'galeria' || (m === 'auto' && !stageQuestions().length && S.photos.length)) { renderGallery(st, m === 'galeria'); return; }
+    const qs = stageQuestions();
+    if (!qs.length) {
+      const key = 'idle:' + (cur() || {}).id; if (key === stageKey) return; stageKey = key; st.className = 'panel';
+      st.innerHTML = `<div class="idle"><div style="display:flex;flex-direction:column;align-items:center;gap:1em"><h2>${esc(cur() ? '¡Participa!' : 'Bienvenidos')}</h2><p>Escanea el código QR para entrar a la app del evento.</p><div class="qr-card" style="margin:0"><div class="qr" id="qr3" style="width:11em;height:11em"></div></div></div></div>`;
+      EV.qr($('#qr3'), url, 320); return;
+    }
+    const q = qs[S.rot % qs.length];
+    const key = 'q:' + q.id + ':' + q.is_open + ':' + qs.length + ':' + (S.rot % qs.length);
+    if (key !== stageKey) {
+      stageKey = key; st.className = 'panel';
+      st.innerHTML = `<div class="panel-head"><span class="eyebrow">Pregunta en vivo</span><div class="row">${qs.length > 1 ? `<div class="rotor">${qs.map((_, i) => `<i class="${i === S.rot % qs.length ? 'on' : ''}"></i>`).join('')}</div>` : ''}<span class="pill ${q.is_open ? 'live' : ''}">${q.is_open ? 'Votación abierta' : 'Cerrada'}</span></div></div>
+        <h2 class="stage-q">${esc(q.text)}</h2><div class="stage-res"><div id="stageRes"></div></div>`;
+    }
+    updateStageResults();
+  }
+  function updateStageResults() {
+    const host = $('#stageRes'); if (!host) return;
+    const qs = stageQuestions(); if (!qs.length) return;
+    const q = qs[S.rot % qs.length];
+    if (q.qtype === 'abierta') EV.renderResults(host, q, S.answers, { big: true, limit: 8 });
+    else EV.renderResults(host, q, S.answers, { big: true });
+  }
+  // rotar preguntas abiertas cada 15 s
+  setInterval(() => { if (stageQuestions().length > 1 && mode() !== 'galeria' && mode() !== 'ponente') { S.rot++; render(); } }, 15000);
+
+  /* -------- galería -------- */
+  function renderGallery(st, full) {
+    const ph = S.photos;
+    if (!ph.length) {
+      if (stageKey === 'gal-empty') return; stageKey = 'gal-empty'; st.className = 'panel';
+      st.innerHTML = `<div class="idle"><div><h2>Comparte tus fotos</h2><p>Abre la app, entra a Fotos y súbelas. Aparecerán aquí.</p></div></div>`; return;
+    }
+    const key = 'gal:' + ph.slice(0, 12).map((p) => p.id).join();
+    if (key === stageKey) return; stageKey = key;
+    st.className = 'panel gal';
+    st.innerHTML = ph.slice(0, 12).map((p, i) => `<div class="slide ${i === 0 ? 'on' : ''}">
+      <div class="bgimg" style="background-image:url('${esc(p.url)}')"></div><img src="${esc(p.url)}" alt="">
+      <div class="cap"><b>${esc(p.participant_name || '')}</b>${p.caption ? ` · ${esc(p.caption)}` : ''} <span class="muted small">${fmt.rel(p.created_at)}</span></div></div>`).join('');
+    S.slide = 0;
+  }
+  setInterval(() => {
+    const sl = $$('#stage .slide'); if (sl.length < 2) return;
+    sl[S.slide % sl.length].classList.remove('on'); S.slide++; sl[S.slide % sl.length].classList.add('on');
+  }, 6000);
+
+  $('#fs').addEventListener('click', () => { const d = document.documentElement; (d.requestFullscreen ? d.requestFullscreen() : Promise.reject()).catch(() => {}); });
+  document.addEventListener('keydown', (e) => {
+    const map = { '1': 'auto', '2': 'pregunta', '3': 'ponente', '4': 'galeria' };
+    if (map[e.key]) location.hash = map[e.key];
+    if (e.key === 'f') $('#fs').click();
+    if (e.key === 'ArrowRight') { S.rot++; render(); }
+  });
+
+  loadAll().catch((e) => { $('#sTitle').textContent = EV.errMsg(e); });
+})();
+</script>
+</body>
+</html>
