@@ -1,11 +1,11 @@
 {
-  "name": "Evento SPIE en vivo",
-  "short_name": "Evento SPIE",
+  "name": "Convención HSE · SPIE",
+  "short_name": "Convención HSE",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0d1b2a",
-  "theme_color": "#0d1b2a",
+  "background_color": "#0f1e5a",
+  "theme_color": "#0f1e5a",
   "lang": "es",
   "icons": [
     {
