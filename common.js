@@ -26,7 +26,7 @@
   const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
   const fmt = {
-    time(iso) { if (!iso) return ''; return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }); },
+    time(iso) { if (!iso) return ''; return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); },
     date(iso) { if (!iso) return ''; return new Date(iso).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); },
     dateShort(iso) { if (!iso) return ''; return new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }); },
     rel(iso) {
@@ -36,7 +36,9 @@
       if (s < 86400) return `hace ${Math.round(s / 3600)} h`;
       return fmt.dateShort(iso);
     },
-    pct(n) { return `${Math.round(n)}%`; }
+    pct(n) { return `${Math.round(n)}%`; },
+    // línea descriptiva de una sesión: subtítulo y/o ponente
+    sessLine(s) { if (!s) return ''; const sp = [s.speaker, s.speaker_role].filter(Boolean).join(' · '); return [s.subtitle, sp].filter(Boolean).join(' — '); }
   };
 
   function toast(msg, kind = 'ok') {
@@ -146,7 +148,7 @@
      Backend DEMO (localStorage; se sincroniza entre pestañas del mismo navegador)
      ===================================================================== */
   function demoBackend() {
-    const K = (t) => `evdemo:${EID}:${t}`;
+    const K = (t) => `evdemo2:${EID}:${t}`;
     const listeners = new Set();
     const read = (t) => ls.get(K(t), []);
     const write = (t, rows) => {
@@ -154,7 +156,7 @@
       listeners.forEach((fn) => fn(t));
     };
     window.addEventListener('storage', (e) => {
-      if (e.key && e.key.startsWith(`evdemo:${EID}:`)) { const t = e.key.split(':').pop(); listeners.forEach((fn) => fn(t)); }
+      if (e.key && e.key.startsWith(`evdemo2:${EID}:`)) { const t = e.key.split(':').pop(); listeners.forEach((fn) => fn(t)); }
     });
     const match = (r, eq) => Object.entries(eq || {}).every(([k, v]) => (v === null ? r[k] == null : r[k] === v));
     const now = () => new Date().toISOString();
@@ -249,57 +251,40 @@
       },
       seedIfEmpty() {
         if (read('ev_event').length) return;
-        const S1 = uuid(), S2 = uuid(), S3 = uuid();
-        const day = new Date(); day.setHours(9, 0, 0, 0);
-        const at = (h, m = 0) => { const d = new Date(day); d.setHours(h, m); return d.toISOString(); };
-        write('ev_event', [{
-          id: EID, name: 'Foro de Innovación y Seguridad 2026', subtitle: 'Energía, operación y cultura preventiva',
-          starts_at: at(9), ends_at: at(18), venue: 'Centro Citibanamex · Sala B',
-          address: 'Av. del Conscripto 311, Lomas de Sotelo, Miguel Hidalgo, 11200 CDMX',
-          maps_url: 'https://maps.google.com/?q=Centro+Citibanamex+CDMX',
-          description: 'Un día de conferencias sobre seguridad operativa, innovación en campo y cultura preventiva. Participa respondiendo en vivo, enviando preguntas a los ponentes y compartiendo tus fotos.',
-          wifi: 'Red: FORO-2026 · Clave: seguridad26', contact: 'Mesa de registro, planta baja',
-          current_session_id: S1, survey_open: true, moderate_questions: false, screen_mode: 'auto', screen_question_id: null, updated_at: now()
-        }]);
-        write('ev_sessions', [
-          { id: S1, event_id: EID, title: 'Cultura preventiva: del reporte a la acción', speaker: 'Ana Torres', speaker_role: 'Directora HSE LATAM', room: 'Sala B', starts_at: at(9, 30), ends_at: at(10, 30), sort: 1, created_at: now() },
-          { id: S2, event_id: EID, title: 'Digitalización en campo: apps que sí se usan', speaker: 'Carlos Ruiz', speaker_role: 'Líder de TI', room: 'Sala B', starts_at: at(11), ends_at: at(12), sort: 2, created_at: now() },
-          { id: S3, event_id: EID, title: 'Mantenimiento predictivo en parques eólicos', speaker: 'Laura Méndez', speaker_role: 'Gerente de Operaciones', room: 'Sala B', starts_at: at(13), ends_at: at(14), sort: 3, created_at: now() }
-        ]);
+        // Demo con la agenda real de la Segunda Convención de HSE (horarios sobre la fecha de hoy)
+        const day = new Date(); day.setHours(0, 0, 0, 0);
+        const at = (hm) => { const [h, m] = hm.split(':').map(Number); const d = new Date(day); d.setHours(h, m); return d.toISOString(); };
+        const AG = [["08:30", "09:00", "Registro & Activación", null, "pausa"], ["09:00", "09:15", "La seguridad no se declara. Se demuestra.", "¿Cómo pasamos del discurso a la acción?", "conferencia"], ["09:15", "09:50", "Testimonio Real", "El día que cambió todo.", "conferencia"], ["09:50", "10:30", "5 Riesgos Críticos", "Electricidad · Alturas · Izajes · Conducción · LOTO", "conferencia"], ["10:30", "10:45", "Coffee Break", null, "pausa"], ["10:45", "11:20", "Aspectos Psicosociales", "La mente falla antes que el cuerpo.", "conferencia"], ["11:20", "12:00", "Cuando ocurre un accidente, ¿dónde estaba el liderazgo?", "La responsabilidad empieza antes del accidente.", "conferencia"], ["12:00", "12:15", "Coffee Break", null, "pausa"], ["12:15", "12:45", "Formación + IA", "Anticipar el próximo accidente.", "conferencia"], ["12:45", "13:20", "Reconocimientos HSE", null, "conferencia"], ["13:20", "14:00", "Un pacto por la vida", "Un compromiso: Volver a casa.", "conferencia"]];
+        const sessions = AG.map(([a, b, title, subtitle, kind], i) => ({ id: uuid(), event_id: EID, title, subtitle, kind, speaker: null, speaker_role: null, room: null, starts_at: at(a), ends_at: at(b), sort: i + 1, created_at: now() }));
+        const CUR = sessions[3];
+        write('ev_event', [{ id: EID, ...{"name": "Segunda Convención de HSE", "subtitle": "Unidos por la seguridad", "venue": "Cámara Española de Comercio", "address": "Homero 1430, Polanco, Miguel Hidalgo, CDMX", "maps_url": "https://maps.google.com/?q=C%C3%A1mara+Espa%C3%B1ola+de+Comercio+Homero+1430+Polanco+CDMX", "description": "Una mañana para pasar del discurso a la acción: testimonios reales, riesgos críticos, liderazgo y formación con IA. Participa respondiendo en vivo, enviando preguntas a los ponentes y compartiendo tus fotos."}, starts_at: at('08:30'), ends_at: at('14:00'), wifi: null, contact: null,
+          current_session_id: CUR.id, survey_open: true, moderate_questions: false, screen_mode: 'auto', screen_question_id: null, updated_at: now() }]);
+        write('ev_sessions', sessions);
         const Q = (o) => ({ id: uuid(), event_id: EID, scope: 'sesion', is_open: false, show_results: true, options: [], created_at: now(), ...o });
-        const q1 = Q({ session_id: S1, text: '¿Qué tan seguido reportas un peligro en tu sitio?', qtype: 'opcion', options: ['Todos los días', 'Cada semana', 'Cada mes', 'Casi nunca'], is_open: true, sort: 1 });
-        const q2 = Q({ session_id: S1, text: '¿Qué te impide reportar más? (elige todas las que apliquen)', qtype: 'multiple', options: ['Falta de tiempo', 'El formulario es largo', 'No veo seguimiento', 'Miedo a represalias', 'Nada, reporto todo'], is_open: true, sort: 2 });
-        const q3 = Q({ session_id: S1, text: 'En una palabra: ¿qué significa para ti la seguridad?', qtype: 'nube', is_open: true, sort: 3 });
-        const q4 = Q({ session_id: S2, text: '¿Qué tan fácil es usar las apps de campo actuales?', qtype: 'escala', options: ['1', '2', '3', '4', '5'], sort: 1 });
-        const q5 = Q({ session_id: S3, text: '¿Tu equipo ya usa datos para planear mantenimiento?', qtype: 'opcion', options: ['Sí, de forma rutinaria', 'En pruebas piloto', 'Todavía no'], sort: 1 });
-        const sv = [
-          Q({ scope: 'encuesta', session_id: null, text: 'Calificación general del evento', qtype: 'escala', options: ['1', '2', '3', '4', '5'], is_open: true, sort: 1 }),
-          Q({ scope: 'encuesta', session_id: null, text: 'Calidad de las conferencias', qtype: 'escala', options: ['1', '2', '3', '4', '5'], is_open: true, sort: 2 }),
-          Q({ scope: 'encuesta', session_id: null, text: 'Organización y logística', qtype: 'escala', options: ['1', '2', '3', '4', '5'], is_open: true, sort: 3 }),
-          Q({ scope: 'encuesta', session_id: null, text: '¿Recomendarías este evento a un colega?', qtype: 'opcion', options: ['Sí', 'Tal vez', 'No'], is_open: true, sort: 4 }),
-          Q({ scope: 'encuesta', session_id: null, text: '¿Qué tema te gustaría ver en la próxima edición?', qtype: 'abierta', is_open: true, sort: 5 })
-        ];
-        write('ev_questions', [q1, q2, q3, q4, q5, ...sv]);
-        // respuestas de ejemplo para que los gráficos no aparezcan vacíos
-        const names = ['Ejemplo 1', 'Ejemplo 2', 'Ejemplo 3', 'Ejemplo 4', 'Ejemplo 5', 'Ejemplo 6', 'Ejemplo 7', 'Ejemplo 8', 'Ejemplo 9', 'Ejemplo 10', 'Ejemplo 11'];
+        const QS = {"1": [["¿Qué tan presente está la seguridad en las decisiones diarias de tu equipo?", "escala", ["1", "2", "3", "4", "5"]], ["En una palabra: ¿qué demuestra que un equipo es seguro?", "nube", []]], "2": [["¿Has vivido o presenciado un incidente que cambió tu forma de trabajar?", "opcion", ["Sí", "No", "Prefiero no responder"]]], "3": [["¿Cuál de los 5 riesgos críticos ves con más frecuencia en tu sitio?", "opcion", ["Electricidad", "Alturas", "Izajes", "Conducción", "LOTO"]], ["¿Cuál crees que se subestima más?", "opcion", ["Electricidad", "Alturas", "Izajes", "Conducción", "LOTO"]]], "5": [["¿Qué afecta más tu concentración en el trabajo? (elige todas las que apliquen)", "multiple", ["Cansancio o falta de sueño", "Presión de tiempo", "Estrés personal o familiar", "Exceso de confianza o rutina", "Carga de trabajo"]]], "6": [["¿Qué debe hacer primero un líder para prevenir accidentes?", "opcion", ["Estar presente en campo", "Escuchar y actuar sobre los reportes", "Dar el ejemplo", "Asignar tiempo y recursos"]]], "8": [["¿Qué tan preparado está tu equipo para usar IA en seguridad?", "escala", ["1", "2", "3", "4", "5"]], ["¿En qué tarea de seguridad aplicarías IA primero?", "abierta", []]], "9": [["En una palabra: ¿qué reconoces de tu equipo este año?", "nube", []]], "10": [["En una palabra: ¿cuál es tu compromiso para volver a casa?", "nube", []]]};
+        const qs = [];
+        Object.entries(QS).forEach(([si, list]) => list.forEach(([text, qtype, options], j) => qs.push(Q({ session_id: sessions[+si].id, text, qtype, options, sort: j + 1, is_open: +si === 3 }))));
+        const SV = [["Calificación general de la Convención", "escala", ["1", "2", "3", "4", "5"]], ["Calidad de las conferencias", "escala", ["1", "2", "3", "4", "5"]], ["Organización y logística", "escala", ["1", "2", "3", "4", "5"]], ["¿Recomendarías esta Convención a un colega?", "opcion", ["Sí", "Tal vez", "No"]], ["¿Qué tema te gustaría ver en la próxima Convención?", "abierta", []]];
+        SV.forEach(([text, qtype, options], j) => qs.push(Q({ scope: 'encuesta', session_id: null, text, qtype, options, is_open: true, sort: j + 1 })));
+        write('ev_questions', qs);
+        const [q1, q2] = qs.filter((q) => q.session_id === CUR.id);
+        const names = Array.from({ length: 14 }, (_, i) => 'Ejemplo ' + (i + 1));
         const pids = names.map(() => uuid());
+        const pick1 = [1, 0, 1, 2, 1, 4, 3, 1, 0, 1, 2, 3, 1, 0];
+        const pick2 = [4, 3, 4, 0, 2, 4, 1, 4, 3, 2, 4, 0, 4, 3];
         const ans = [];
-        const pick1 = [0, 1, 1, 2, 1, 0, 3, 1, 2, 0, 1];
-        const pickM = [[0, 1], [2], [0, 2], [1], [4], [0], [2, 3], [1, 2], [0], [2], [0, 1, 2]];
-        const words = ['Prevención', 'Cuidado', 'Familia', 'Vida', 'Prevención', 'Responsabilidad', 'Equipo', 'Familia', 'Prevención', 'Respeto', 'Vida'];
         pids.forEach((pid, i) => {
           const b = { event_id: EID, participant_id: pid, participant_name: names[i], created_at: now() };
           ans.push({ id: uuid(), ...b, question_id: q1.id, value: { i: pick1[i] } });
-          ans.push({ id: uuid(), ...b, question_id: q2.id, value: { is: pickM[i] } });
-          ans.push({ id: uuid(), ...b, question_id: q3.id, value: { t: words[i] } });
+          if (i < 10) ans.push({ id: uuid(), ...b, question_id: q2.id, value: { i: pick2[i] } });
         });
         write('ev_answers', ans);
         write('ev_participants', pids.map((id, i) => ({ id, event_id: EID, name: names[i], created_at: now(), last_seen: now() })));
         write('ev_speaker_q', [
-          { id: uuid(), event_id: EID, session_id: S1, participant_id: pids[0], participant_name: 'Ejemplo 1', anonymous: false, text: '¿Cómo damos seguimiento visible a los reportes para que la gente vea que sí sirven?', status: 'approved', votes: 0, created_at: now() },
-          { id: uuid(), event_id: EID, session_id: S1, participant_id: pids[1], participant_name: 'Ejemplo 2', anonymous: true, text: '¿Qué indicador recomiendas para medir cultura preventiva, más allá de los incidentes?', status: 'approved', votes: 0, created_at: now() }
+          { id: uuid(), event_id: EID, session_id: CUR.id, participant_id: pids[0], participant_name: 'Ejemplo 1', anonymous: false, text: '¿Qué controles mínimos deben verificarse antes de cualquier trabajo con LOTO en campo?', status: 'approved', votes: 0, created_at: now() },
+          { id: uuid(), event_id: EID, session_id: CUR.id, participant_id: pids[1], participant_name: 'Ejemplo 2', anonymous: true, text: '¿Cómo detener un izaje cuando la presión por terminar viene del cliente?', status: 'approved', votes: 0, created_at: now() }
         ]);
-        write('ev_sq_votes', [0, 1, 2].map((i) => ({ question_id: read('ev_speaker_q')[0].id, participant_id: pids[i + 2], event_id: EID, created_at: now() })));
+        write('ev_sq_votes', [0, 1, 2, 3].map((i) => ({ question_id: read('ev_speaker_q')[0].id, participant_id: pids[i + 2], event_id: EID, created_at: now() })));
         afterWrite('ev_sq_votes');
         write('ev_photos', []);
         write('ev_activity', []);
@@ -466,7 +451,7 @@
     u.pathname = u.pathname.replace(/[^/]*$/, '') ;
     return u.href;
   }
-  function qr(host, text, size = 200, dark = '#0d1b2a', light = '#ffffff') {
+  function qr(host, text, size = 200, dark = '#0f1e5a', light = '#ffffff') {
     host.innerHTML = '';
     if (!window.QRCode) { host.textContent = text; return null; }
     return new window.QRCode(host, { text, width: size, height: size, colorDark: dark, colorLight: light, correctLevel: window.QRCode.CorrectLevel.M });
