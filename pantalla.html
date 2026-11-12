@@ -57,6 +57,9 @@
   .sqs .v { text-align: center; font: 800 1.5em var(--f-display); line-height: 1; color: var(--accent); }
   .sqs .v small { display: block; font: 600 .45em var(--f-body); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-top: .3em; }
   .sqs p { font-size: 1.08em; line-height: 1.35; }
+  #sqCount:empty { display: none; }
+  .sqs .v.t { font-size: 1.05em; color: var(--accent-text); }
+  .sqs li.done { opacity: .6; }
   .sqs .by { color: var(--muted); font-size: .8em; margin-top: .3em; }
   .sqs li.top1 { background: var(--surface-2); box-shadow: inset .3em 0 0 var(--accent); }
   .solo .sqs { display: grid; grid-template-columns: 1fr 1fr; }
@@ -139,7 +142,8 @@
   EV.qr($('#qr'), url, 256);
   $('#qrUrl').textContent = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
-  const cur = () => S.sessions.find((s) => s.id === (S.event && S.event.current_session_id)) || null;
+  const cur = () => EV.currentSession(S.event, S.sessions);
+  const askCur = () => EV.askTarget(S.event, S.sessions);
   const qIds = () => { const c = cur(); return S.questions.filter((q) => q.scope === 'sesion' && c && q.session_id === c.id).map((q) => q.id); };
 
   const L = {
@@ -147,7 +151,7 @@
     async ev_sessions() { S.sessions = await db.select('ev_sessions', { order: ['sort', 'asc'] }); },
     async ev_questions() { S.questions = await db.select('ev_questions', { order: ['sort', 'asc'] }); },
     async ev_answers() { S.answers = await db.select('ev_answers', { in: ['question_id', qIds()] }); },
-    async ev_speaker_q() { S.sq = await db.select('ev_speaker_q', { order: ['votes', 'desc'] }); },
+    async ev_speaker_q() { S.sq = await db.select('ev_speaker_q', { order: ['created_at', 'desc'] }); },
     async ev_photos() { S.photos = (await db.select('ev_photos', { order: ['created_at', 'desc'], limit: 60 })).filter((p) => !p.hidden); },
     async ev_participants() {
       try { S.people = await db.participantCount(); } catch { S.people = 0; }
@@ -173,6 +177,14 @@
     }
     if (L[t]) { pend.add(t); flush(); }
   });
+
+  // el horario avanza solo: revisa cada 20 s si cambió la conferencia en curso
+  let lastCur = null;
+  setInterval(async () => {
+    const id = (cur() || {}).id || null;
+    if (id === lastCur) return;
+    lastCur = id; try { await L.ev_answers(); } catch {} render();
+  }, 20000);
 
   /* -------- modo de pantalla -------- */
   function mode() {
@@ -204,19 +216,19 @@
   }
 
   function sqList(limit) {
-    const c = cur();
-    return S.sq.filter((q) => c && q.session_id === c.id && q.status === 'approved')
-      .sort((a, b) => b.votes - a.votes || (a.created_at > b.created_at ? 1 : -1)).slice(0, limit);
+    const c = askCur();
+    return S.sq.filter((q) => c && q.session_id === c.id && (q.status === 'approved' || q.status === 'answered'))
+      .sort((a, b) => (b.created_at > a.created_at ? 1 : -1)).slice(0, limit);
   }
   function sqHTML(list) {
-    return list.map((q, i) => `<li class="${i === 0 && q.votes > 0 ? 'top1' : ''}"><div class="v">${q.votes}<small>votos</small></div>
+    return list.map((q, i) => `<li class="${i === 0 ? 'top1' : ''} ${q.status === 'answered' ? 'done' : ''}"><div class="v t">${EV.fmt.time(q.created_at)}${q.status === 'answered' ? '<small>respondida</small>' : ''}</div>
       <div><p>${esc(q.text)}</p><div class="by">${q.anonymous ? 'Anónimo' : esc(q.participant_name || '')}</div></div></li>`).join('');
   }
   function renderSide() {
     const list = sqList(5);
-    const sig = list.map((q) => q.id + ':' + q.votes).join();
+    const sig = list.map((q) => q.id + ':' + q.status).join();
     const ul = $('#sqs');
-    if (ul.dataset.sig !== sig) { ul.dataset.sig = sig; ul.innerHTML = list.length ? sqHTML(list) : '<li style="grid-template-columns:1fr" class="muted">Envía tu pregunta desde la app y vota las que más te interesen.</li>'; }
+    if (ul.dataset.sig !== sig) { ul.dataset.sig = sig; ul.innerHTML = list.length ? sqHTML(list) : '<li style="grid-template-columns:1fr" class="muted">Aún no hay preguntas.</li>'; }
     const n = sqList(999).length; $('#sqCount').textContent = n ? `${n}` : '';
   }
 
@@ -224,17 +236,17 @@
   function renderStage(m) {
     const st = $('#stage');
     if (m === 'ponente') {
-      const list = sqList(8); const key = 'ponente:' + list.map((q) => q.id + q.votes).join();
+      const list = sqList(8); const key = 'ponente:' + list.map((q) => q.id + q.status).join();
       if (key === stageKey) return; stageKey = key; st.className = 'panel';
-      st.innerHTML = `<div class="panel-head"><span class="eyebrow">Preguntas al ponente · más votadas</span><div class="qr-card" style="margin:0;padding:.5em"><div class="qr" id="qr2" style="width:4.5em;height:4.5em"></div><div><b style="font-size:1em">Envía la tuya</b></div></div></div>
-        <ul class="sqs">${list.length ? sqHTML(list) : '<li style="grid-template-columns:1fr" class="muted">Aún no hay preguntas aprobadas.</li>'}</ul>`;
+      st.innerHTML = `<div class="panel-head"><span class="eyebrow">Preguntas al ponente</span><div class="qr-card" style="margin:0;padding:.5em"><div class="qr" id="qr2" style="width:4.5em;height:4.5em"></div><div><b style="font-size:1em">Envía la tuya</b></div></div></div>
+        <ul class="sqs">${list.length ? sqHTML(list) : '<li style="grid-template-columns:1fr" class="muted">Aún no hay preguntas.</li>'}</ul>`;
       EV.qr($('#qr2'), url, 160); return;
     }
     if (m === 'galeria' || (m === 'auto' && !stageQuestions().length && S.photos.length)) { renderGallery(st, m === 'galeria'); return; }
     const qs = stageQuestions();
     if (!qs.length) {
       const key = 'idle:' + (cur() || {}).id; if (key === stageKey) return; stageKey = key; st.className = 'panel';
-      st.innerHTML = `<div class="idle"><div style="display:flex;flex-direction:column;align-items:center;gap:1em"><h2>${esc(cur() ? '¡Participa!' : 'Bienvenidos')}</h2><p>Escanea el código QR para entrar a la app del evento.</p><div class="qr-card" style="margin:0"><div class="qr" id="qr3" style="width:11em;height:11em"></div></div></div></div>`;
+      st.innerHTML = `<div class="idle"><div style="display:flex;flex-direction:column;align-items:center;gap:1em"><h2>${esc(cur() ? cur().title : 'Bienvenidos')}</h2><p>Escanea y participa</p><div class="qr-card" style="margin:0"><div class="qr" id="qr3" style="width:11em;height:11em"></div></div></div></div>`;
       EV.qr($('#qr3'), url, 320); return;
     }
     const q = qs[S.rot % qs.length];
@@ -261,7 +273,7 @@
     const ph = S.photos;
     if (!ph.length) {
       if (stageKey === 'gal-empty') return; stageKey = 'gal-empty'; st.className = 'panel';
-      st.innerHTML = `<div class="idle"><div><h2>Comparte tus fotos</h2><p>Abre la app, entra a Fotos y súbelas. Aparecerán aquí.</p></div></div>`; return;
+      st.innerHTML = `<div class="idle"><div><h2>Comparte tus fotos</h2></div></div>`; return;
     }
     const key = 'gal:' + ph.slice(0, 12).map((p) => p.id).join();
     if (key === stageKey) return; stageKey = key;
