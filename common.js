@@ -325,7 +325,7 @@
   let logoImg = null;
   function loadLogo() {
     if (logoImg) return logoImg;
-    logoImg = new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = 'img/logo-blanco.png'; });
+    logoImg = new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = 'img/logo-blanco.png?v=7'; });
     return logoImg;
   }
   async function watermark(blob, info = {}) {
