@@ -7,13 +7,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Evento en vivo</title>
-<link rel="manifest" href="manifest.json?v=7">
+<link rel="manifest" href="manifest.json?v=9">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=9">
 <style>
   body { min-height: 100dvh; }
   .wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -25,7 +25,7 @@
     box-shadow: 0 30px 60px rgb(0 0 0 / .35); position: relative;
   }
   .badge-top { position: relative; color: #fff; padding: 18px 22px 26px; min-height: 250px; display: flex; flex-direction: column; justify-content: space-between;
-    background: linear-gradient(180deg, rgb(15 30 90 / .55) 0%, rgb(15 30 90 / .15) 35%, rgb(15 30 90 / .92) 100%), url(img/hero.jpg?v=7) 38% 22% / cover, #0f1e5a; }
+    background: linear-gradient(180deg, rgb(15 30 90 / .55) 0%, rgb(15 30 90 / .15) 35%, rgb(15 30 90 / .92) 100%), var(--hero) 38% 22% / cover, #0f1e5a; }
   .badge-brand { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .badge-brand .sub { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .9; }
   .badge-brand img { height: 34px; width: auto; border-radius: 4px; }
@@ -84,7 +84,7 @@
 
   /* ---------- Inicio ---------- */
   .hero { color: #fff; border-radius: 18px; padding: 18px 20px 20px; position: relative; overflow: hidden;
-    background: linear-gradient(180deg, rgb(15 30 90 / .45) 0%, rgb(15 30 90 / .2) 30%, rgb(15 30 90 / .95) 78%), url(img/hero.jpg?v=7) 38% 22% / cover, #0f1e5a; }
+    background: linear-gradient(180deg, rgb(15 30 90 / .45) 0%, rgb(15 30 90 / .2) 30%, rgb(15 30 90 / .95) 78%), var(--hero) 38% 22% / cover, #0f1e5a; }
   .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--accent); }
   .hero-brand { display: flex; justify-content: flex-end; margin-bottom: 64px; }
   .hero-brand img { height: 30px; width: auto; border-radius: 4px; }
@@ -218,7 +218,7 @@
   <div class="wrap" style="width:100%; display:grid; place-items:center">
     <form class="badge" id="gateForm" novalidate>
       <div class="badge-top">
-        <div class="badge-brand"><span class="sub">SPIE Global Services Energy</span><img src="img/logo-navy.png?v=7" alt="SPIE"></div>
+        <div class="badge-brand"><span class="sub">SPIE Global Services Energy</span><img data-logo="navy" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="SPIE"></div>
         <div>
           <div class="eyebrow" id="gateDate">Evento</div>
           <h1 id="gateName">Cargando…</h1>
@@ -260,7 +260,7 @@
     <!-- INICIO -->
     <section class="view" id="v-inicio" data-view="inicio">
       <div class="hero">
-        <div class="hero-brand"><img src="img/logo-navy.png?v=7" alt="SPIE"></div>
+        <div class="hero-brand"><img data-logo="navy" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="SPIE"></div>
         <div class="eyebrow" id="iDate"></div>
         <h1 id="iName"></h1>
         <p id="iSub"></p>
@@ -384,9 +384,9 @@
 <div id="sheet" class="sheet-bg" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="config.js?v=7"></script>
-<script src="icons.js?v=7"></script>
-<script src="common.js?v=7"></script>
+<script src="config.js?v=9"></script>
+<script src="icons.js?v=9"></script>
+<script src="common.js?v=9"></script>
 <script>
 (function () {
   'use strict';
