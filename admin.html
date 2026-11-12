@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=9">
 <style>
   body { min-height: 100dvh; }
   .layout { display: grid; grid-template-columns: 230px 1fr; min-height: 100dvh; }
@@ -149,10 +149,10 @@
       <div class="card stack">
         <div class="row" style="justify-content:space-between"><strong>Pantalla pública</strong><a class="btn ghost sm" href="pantalla.html" target="_blank" rel="noopener">Abrir pantalla</a></div>
         <div class="modes" id="modes">
-          <button data-mode="auto"><span data-ic="screen"></span>Automático</button>
-          <button data-mode="pregunta"><span data-ic="live"></span>Solo resultados</button>
+          <button data-mode="pregunta"><span data-ic="live"></span>Pregunta en vivo</button>
           <button data-mode="ponente"><span data-ic="chat"></span>Preguntas al ponente</button>
           <button data-mode="galeria"><span data-ic="image"></span>Galería</button>
+          <button data-mode="espera"><span data-ic="screen"></span>Espera</button>
         </div>
       </div>
       <div class="ptitle"><h2 style="font-size:19px">Preguntas de esta conferencia</h2><button class="btn soft sm" data-p="contenido">Editar preguntas</button></div>
@@ -291,9 +291,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="config.js?v=7"></script>
-<script src="icons.js?v=7"></script>
-<script src="common.js?v=7"></script>
+<script src="config.js?v=9"></script>
+<script src="icons.js?v=9"></script>
+<script src="common.js?v=9"></script>
 <script>
 (function () {
   'use strict';
@@ -406,7 +406,8 @@
     const c = curSes();
     $('#curNow').textContent = c ? `${fmt.time(c.starts_at)} · ${c.title}` : 'Sin conferencia en este momento';
     $('#curHow').textContent = manual ? 'Fijada manualmente' : 'Automático por horario';
-    $$('#modes [data-mode]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.mode === (S.event?.screen_mode || 'auto')));
+    const sm = ['pregunta', 'ponente', 'galeria'].includes(S.event?.screen_mode) ? S.event.screen_mode : 'espera';
+    $$('#modes [data-mode]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.mode === sm));
     const qs = S.questions.filter((q) => q.scope === 'sesion' && q.session_id === curId());
     const host = $('#liveList');
     const sig = JSON.stringify(qs.map((q) => [q.id, q.text, q.is_open, q.show_results, q.qtype, q.options])) + S.event?.screen_question_id;
@@ -419,7 +420,7 @@
           <div class="chips">${q.is_open ? '<span class="pill live">Abierta</span>' : '<span class="pill">Cerrada</span>'}${pinned ? '<span class="pill accent">En pantalla</span>' : ''}</div></div>
           <div class="actions">
             <button class="btn sm ${q.is_open ? 'danger' : ''}" data-open="${q.id}">${q.is_open ? I('stop') + 'Cerrar votación' : I('play') + 'Reabrir votación'}</button>
-            <button class="btn soft sm" data-pin="${q.id}">${I('screen')}${pinned ? 'Quitar de pantalla' : 'Fijar en pantalla'}</button>
+            <button class="btn soft sm" data-pin="${q.id}">${I('screen')}${pinned ? 'Quitar de pantalla' : 'Mostrar en pantalla'}</button>
             <button class="btn ghost sm" data-reset="${q.id}">${I('refresh')}Reiniciar respuestas</button>
           </div>
           <details class="res-wrap" data-q="${q.id}" ${q.is_open || openDetails.has(q.id) ? 'open' : ''}><summary>Resultados</summary><div class="res" data-res="${q.id}"></div></details></div>`;
@@ -443,7 +444,7 @@
       const q = S.questions.find((x) => x.id === b.dataset.open);
       try { await db.update('ev_questions', { id: q.id }, { is_open: !q.is_open }); q.is_open = !q.is_open; toast(q.is_open ? 'Votación abierta' : 'Votación cerrada'); renderVivo(); } catch (x) { toast(errMsg(x), 'err'); }
     }
-    if (b.dataset.pin) patchEvent({ screen_question_id: S.event.screen_question_id === b.dataset.pin ? null : b.dataset.pin }, 'Pantalla actualizada');
+    if (b.dataset.pin) { const on = S.event.screen_question_id !== b.dataset.pin; patchEvent(on ? { screen_question_id: b.dataset.pin, screen_mode: 'pregunta' } : { screen_question_id: null }, on ? 'Se muestra en pantalla' : 'Pantalla actualizada'); }
     if (b.dataset.reset) {
       if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.innerHTML = 'Confirmar: borrar respuestas'; b.classList.add('danger'); return; }
       try { await db.remove('ev_answers', { question_id: b.dataset.reset }); S.answers = S.answers.filter((a) => a.question_id !== b.dataset.reset); $('#liveList').dataset.sig = ''; renderVivo(); toast('Respuestas borradas'); } catch (x) { toast(errMsg(x), 'err'); }
