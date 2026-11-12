@@ -7,13 +7,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Evento en vivo</title>
-<link rel="manifest" href="manifest.json?v=9">
+<link rel="manifest" href="manifest.json?v=11">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=9">
+<link rel="stylesheet" href="styles.css?v=11">
 <style>
   body { min-height: 100dvh; }
   .wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -384,9 +384,9 @@
 <div id="sheet" class="sheet-bg" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="config.js?v=9"></script>
-<script src="icons.js?v=9"></script>
-<script src="common.js?v=9"></script>
+<script src="config.js?v=11"></script>
+<script src="icons.js?v=11"></script>
+<script src="common.js?v=11"></script>
 <script>
 (function () {
   'use strict';
@@ -424,9 +424,10 @@
       // verificar que la sesión anónima sigue siendo la misma
       try {
         const uid = await db.ensureAnon();
-        if (uid !== S.me.id) { S.me.id = uid; await registerParticipant(S.me.name); }
-        else db.update('ev_participants', { id: uid }, { last_seen: new Date().toISOString() }).catch(() => {});
-      } catch (e) { toast(errMsg(e), 'err'); }
+        // registra de nuevo (upsert) para asegurar que el participante existe en la base con esta sesión
+        await registerParticipant(S.me.name);
+        void uid;
+      } catch (e) { toast('No se pudo conectar tu sesión. ' + errMsg(e), 'err'); }
       startApp();
     } else {
       $('#gate').hidden = false;
@@ -441,6 +442,25 @@
     $('#gateSub').textContent = e.subtitle || '';
     $('#gateDate').textContent = e.starts_at ? fmt.date(e.starts_at) : 'Evento';
     $('#gateVenue').textContent = e.venue ? e.venue.split('·')[0].trim() : '';
+  }
+
+  // Antes de escribir: la sesión del teléfono debe existir y coincidir con el participante.
+  async function ensureMe() {
+    const uid = await db.ensureAnon();
+    if (uid !== S.me.id) await registerParticipant(S.me.name);
+    return S.me.id;
+  }
+  // Ejecuta una escritura; si Supabase la rechaza por sesión, renueva la sesión y reintenta una vez.
+  const AUTH_ERR = /row-level security|violates|JWT|jwt|not authenticated|401|403|refresh token|session/i;
+  async function safeWrite(fn) {
+    await ensureMe();
+    try { return await fn(); }
+    catch (e) {
+      if (!AUTH_ERR.test((e && (e.message || e.code)) + '')) throw e;
+      const uid = await db.resetAnon();
+      if (uid !== S.me.id) await registerParticipant(S.me.name);
+      return await fn();
+    }
   }
 
   async function registerParticipant(name) {
@@ -699,13 +719,17 @@
     const total = S.queue.length; let done = 0;
     for (const item of S.queue.slice()) {
       try {
-        const path = `${EID}/${S.me.id}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
-        const url = await db.upload(item.blob, path);
-        await db.insert('ev_photos', { event_id: EID, participant_id: S.me.id, participant_name: S.me.name, path, url, caption: item.caption.trim() || null });
+        const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
+        let path = '';
+        await safeWrite(async () => {
+          path = `${EID}/${S.me.id}/${stamp}`;
+          const url = await db.upload(item.blob, path);
+          await db.insert('ev_photos', { event_id: EID, participant_id: S.me.id, participant_name: S.me.name, path, url, caption: item.caption.trim() || null });
+        });
         EV.log('foto', { path, caption: item.caption.trim() || null });
         S.queue = S.queue.filter((x) => x !== item); URL.revokeObjectURL(item.url);
         done++; prog.firstElementChild.style.width = (done / total) * 100 + '%';
-      } catch (e) { toast(errMsg(e), 'err'); break; }
+      } catch (e) { toast('No se pudo publicar la foto. ' + errMsg(e), 'err'); break; }
     }
     btn.disabled = false; setTimeout(() => { prog.hidden = true; prog.firstElementChild.style.width = 0; }, 600);
     renderQueue();
@@ -850,15 +874,14 @@
   }
 
   async function sendAnswer(q, value) {
-    const row = { event_id: EID, question_id: q.id, participant_id: S.me.id, participant_name: S.me.name, value };
     try {
-      const saved = await db.upsert('ev_answers', row, 'question_id,participant_id');
+      const saved = await safeWrite(() => db.upsert('ev_answers', { event_id: EID, question_id: q.id, participant_id: S.me.id, participant_name: S.me.name, value }, 'question_id,participant_id'));
       const i = S.answers.findIndex((a) => a.question_id === q.id && a.participant_id === S.me.id);
       if (i >= 0) S.answers[i] = { ...S.answers[i], ...saved }; else S.answers.push(saved);
       S.editing.delete(q.id);
       EV.log(q.scope === 'encuesta' ? 'encuesta' : 'respuesta', { pregunta: q.text, valor: value });
       return true;
-    } catch (e) { toast(errMsg(e), 'err'); return false; }
+    } catch (e) { toast('No se pudo enviar tu respuesta. ' + errMsg(e), 'err'); return false; }
   }
 
   $('#vList').addEventListener('click', async (e) => {
@@ -907,15 +930,17 @@
     const t = askSession();
     $('#pHead').innerHTML = ponenteHeadHTML(t);
     $('#askForm').hidden = !t;
-    const list = t ? S.sq.filter((q) => q.session_id === t.id && (q.status === 'approved' || q.status === 'answered' || q.participant_id === S.me.id)) : [];
+    // historial de todo el evento: ninguna pregunta "desaparece" cuando cambia la conferencia en curso
+    const sesName = (id) => (S.sessions.find((x) => x.id === id) || {}).title || '';
+    const list = S.sq.filter((q) => q.status === 'approved' || q.status === 'answered' || q.participant_id === S.me.id);
     list.sort((a, b) => (b.created_at > a.created_at ? 1 : -1));
     $('#pCount').textContent = list.length ? `${list.length} ${list.length === 1 ? 'pregunta' : 'preguntas'}` : '';
     $('#pList').innerHTML = list.length ? list.map((q) => {
       const own = q.participant_id === S.me.id;
       const tag = q.status === 'answered' ? '<span class="pill ok">Respondida</span>' : q.status === 'hidden' ? '<span class="pill">Oculta</span>' : '';
       return `<div class="sq hist ${own ? 'mine' : ''} ${q.status === 'answered' ? 'answered' : ''}"><div><p>${esc(q.text)}</p>
-        <div class="by"><span>${q.anonymous ? 'Anónimo' : esc(q.participant_name || 'Participante')}${own ? ' (tú)' : ''}</span><span>·</span><span>${fmt.time(q.created_at)}</span>${tag}</div></div></div>`;
-    }).join('') : (t ? `<div class="card empty">${I('chat')}<p>Aún no hay preguntas.</p></div>` : '');
+        <div class="by"><span>${q.anonymous ? 'Anónimo' : esc(q.participant_name || 'Participante')}${own ? ' (tú)' : ''}</span><span>·</span><span>${fmt.time(q.created_at)}</span>${t && q.session_id !== t.id && sesName(q.session_id) ? `<span>·</span><span>${esc(sesName(q.session_id))}</span>` : ''}${tag}</div></div></div>`;
+    }).join('') : `<div class="card empty">${I('chat')}<p>Aún no hay preguntas.</p></div>`;
   }
   $('#askForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -924,13 +949,14 @@
     if (text.length < 3) return toast('Escribe tu pregunta', 'err');
     const b = $('#askBtn'); b.disabled = true;
     try {
-      const row = await db.insert('ev_speaker_q', { event_id: EID, session_id: t.id, participant_id: S.me.id, participant_name: S.me.name, anonymous: $('#askAnon').checked, text });
+      const anon = $('#askAnon').checked;
+      const row = await safeWrite(() => db.insert('ev_speaker_q', { event_id: EID, session_id: t.id, participant_id: S.me.id, participant_name: S.me.name, anonymous: anon, text }));
       S.sq.unshift(row);
       EV.log('pregunta_ponente', { sesion: t.title, texto: text, anonima: $('#askAnon').checked });
       $('#askText').value = '';
       toast('Pregunta enviada');
       renderPonente();
-    } catch (err) { toast(errMsg(err), 'err'); }
+    } catch (err) { toast('No se pudo enviar tu pregunta. ' + errMsg(err), 'err'); }
     b.disabled = false;
   });
 
