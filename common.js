@@ -7,8 +7,14 @@
   const C = window.EVENT_CONFIG || {};
   const EID = C.EVENT_ID || 'evento-2026';
   const DEMO = !C.SUPABASE_URL || !C.SUPABASE_ANON_KEY;
+  // En el sitio publicado el modo demo nunca debe pasar desapercibido: los datos no se compartirían
+  if (DEMO && /github\.io$/.test(location.hostname)) {
+    const warn = () => { const d = document.createElement('div'); d.textContent = 'La app no está conectada a la base de datos: revisa config.js en GitHub.';
+      d.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:9999;background:#cc0000;color:#fff;font:600 14px Arial,sans-serif;padding:10px 16px;text-align:center';
+      document.body.appendChild(d); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', warn); else warn();
+  }
 
-  if (C.ACCENT) document.documentElement.style.setProperty('--accent', C.ACCENT);
 
   /* Imágenes de marca incrustadas: no dependen de archivos externos */
   const BRAND = {
@@ -59,7 +65,10 @@
     t.className = 'toast ' + kind;
     t.textContent = msg;
     host.appendChild(t);
-    setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3200);
+    // los errores se quedan hasta que se tocan; los avisos normales se van solos
+    const close = () => { t.classList.add('out'); setTimeout(() => t.remove(), 300); };
+    if (kind === 'err') { t.style.cursor = 'pointer'; t.title = 'Cerrar'; t.addEventListener('click', close); setTimeout(close, 12000); }
+    else setTimeout(close, 3200);
   }
 
   function errMsg(e) {
@@ -87,6 +96,11 @@
       async uid() { const { data } = await sb.auth.getSession(); return data.session?.user?.id || null; },
       async ensureAnon() {
         const id = await this.uid(); if (id) return id;
+        const { data, error } = await sb.auth.signInAnonymously(); if (error) throw error; return data.user.id;
+      },
+      // sesión nueva desde cero (si la guardada ya no sirve)
+      async resetAnon() {
+        try { await sb.auth.signOut({ scope: 'local' }); } catch {}
         const { data, error } = await sb.auth.signInAnonymously(); if (error) throw error; return data.user.id;
       },
       async signIn(email, password) { ok(await sb.auth.signInWithPassword({ email, password })); return this.uid(); },
@@ -209,6 +223,7 @@
       mode: 'demo',
       async uid() { return uidv; },
       async ensureAnon() { return uidv; },
+      async resetAnon() { return uidv; },
       async signIn() { return uidv; },
       async signOut() {},
       async currentEmail() { return 'demo@local'; },
