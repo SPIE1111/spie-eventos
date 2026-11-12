@@ -25,7 +25,7 @@
     box-shadow: 0 30px 60px rgb(0 0 0 / .35); position: relative;
   }
   .badge-top { position: relative; color: #fff; padding: 18px 22px 26px; min-height: 250px; display: flex; flex-direction: column; justify-content: space-between;
-    background: linear-gradient(180deg, rgb(15 30 90 / .55) 0%, rgb(15 30 90 / .15) 35%, rgb(15 30 90 / .92) 100%), url(img/hero.jpg) center 30% / cover, #0f1e5a; }
+    background: linear-gradient(180deg, rgb(15 30 90 / .55) 0%, rgb(15 30 90 / .15) 35%, rgb(15 30 90 / .92) 100%), url(img/hero.jpg) 38% 22% / cover, #0f1e5a; }
   .badge-brand { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .badge-brand .sub { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .9; }
   .badge-brand img { height: 34px; width: auto; border-radius: 4px; }
@@ -38,7 +38,13 @@
   .badge-body input { background: #f4f5f9; color: #0f1e5a; border-color: #d8dbe8; font-size: 18px; }
   .badge-body .muted { color: #56608a; font-size: 13.5px; }
   .badge-body .btn { background: #ff9600; color: #0f1e5a; font-weight: 700; }
-  .badge-strip { display: flex; justify-content: space-between; gap: 10px; padding: 12px 22px; border-top: 1px dashed #d8dbe8; font: 600 11px var(--f-body); color: #56608a; letter-spacing: .08em; text-transform: uppercase; text-align: right; }
+  .badge-strip { padding: 12px 22px; border-top: 1px dashed #d8dbe8; font: 600 11px var(--f-body); color: #56608a; letter-spacing: .08em; text-transform: uppercase; }
+  .badge-strip:empty, .badge-strip:has(span:empty) { display: none; }
+  .gate-err { margin: -6px 0 0; color: var(--danger); font-weight: 600; font-size: 14px; }
+  .badge-body input.bad { border-color: #cc0000; box-shadow: 0 0 0 3px rgb(204 0 0 / .12); }
+  .gate-go { display: flex; justify-content: space-between; padding-inline: 22px; font-size: 17px; }
+  .gate-go .arr { font-size: 20px; line-height: 1; transition: transform .2s; }
+  .gate-go:hover .arr { transform: translateX(4px); }
   .badge-strip b { color: #0f1e5a; }
 
   /* ---------- Encabezado ---------- */
@@ -78,7 +84,7 @@
 
   /* ---------- Inicio ---------- */
   .hero { color: #fff; border-radius: 18px; padding: 18px 20px 20px; position: relative; overflow: hidden;
-    background: linear-gradient(180deg, rgb(15 30 90 / .45) 0%, rgb(15 30 90 / .2) 30%, rgb(15 30 90 / .95) 78%), url(img/hero.jpg) center 25% / cover, #0f1e5a; }
+    background: linear-gradient(180deg, rgb(15 30 90 / .45) 0%, rgb(15 30 90 / .2) 30%, rgb(15 30 90 / .95) 78%), url(img/hero.jpg) 38% 22% / cover, #0f1e5a; }
   .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--accent); }
   .hero-brand { display: flex; justify-content: flex-end; margin-bottom: 64px; }
   .hero-brand img { height: 30px; width: auto; border-radius: 4px; }
@@ -117,6 +123,8 @@
   .agenda li.on time { background: var(--accent); color: var(--accent-ink); }
   .agenda li.done { opacity: .55; }
 
+  .sq.hist { grid-template-columns: 1fr; }
+  .sq.mine { border-color: var(--accent); background: var(--accent-soft); }
   /* ---------- Fotos ---------- */
   .pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .picker { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 120px; border-radius: 16px; border: 1.5px dashed var(--line); background: var(--surface); cursor: pointer; font-weight: 600; text-align: center; padding: 12px; }
@@ -221,13 +229,12 @@
       <div class="badge-body">
         <label class="field" for="nameInput">
           <span>¿Cómo te llamas?</span>
-          <input id="nameInput" type="text" autocomplete="name" placeholder="Nombre y apellido" maxlength="80" required>
+          <input id="nameInput" type="text" autocomplete="name" placeholder="Nombre y apellido" maxlength="80">
         </label>
-        <p class="muted">Tu nombre aparece en tus fotos, preguntas y respuestas, y se usa para el registro de participación del evento.</p>
-        <button class="btn block" id="gateBtn" type="submit">Entrar al evento</button>
-        <p class="muted" id="gateErr" role="alert" style="color:var(--danger)" hidden></p>
+        <p class="gate-err" id="gateErr" role="alert" hidden>Escribe tu nombre</p>
+        <button class="btn block gate-go" id="gateBtn" type="submit"><span>Ingresar</span><span class="arr" aria-hidden="true">→</span></button>
       </div>
-      <div class="badge-strip"><b>Participante</b><span id="gateVenue"></span></div>
+      <div class="badge-strip"><span id="gateVenue"></span></div>
     </form>
   </div>
 </section>
@@ -274,7 +281,7 @@
 
       <div class="tiles">
         <button class="tile" data-go="vivo"><span id="tVivoIc"></span><div><strong>En vivo</strong><div class="muted" id="tVivo">Responde y ve resultados</div></div></button>
-        <button class="tile" data-go="ponente"><span id="tPonIc"></span><div><strong>Pregunta al ponente</strong><div class="muted" id="tPon">Envía y vota preguntas</div></div></button>
+        <button class="tile" data-go="ponente"><span id="tPonIc"></span><div><strong>Pregunta al ponente</strong><div class="muted" id="tPon">Envía tu pregunta</div></div></button>
         <button class="tile" data-go="fotos"><span id="tFotIc"></span><div><strong>Fotos</strong><div class="muted" id="tFot">Comparte lo que vives</div></div></button>
         <button class="tile" data-go="encuesta"><span id="tEncIc"></span><div><strong>Encuesta</strong><div class="muted" id="tEnc">Tu opinión del evento</div></div></button>
       </div>
@@ -321,7 +328,6 @@
           <div class="progress" id="upProg" hidden><div></div></div>
           <button class="btn block" id="publishBtn">Publicar en la galería</button>
         </div>
-        <p class="muted small">Las fotos se comprimen antes de subirse y se muestran con tu nombre. El moderador puede ocultar fotos que no correspondan al evento.</p>
       </div>
 
       <div id="f-galeria" class="stack" hidden>
@@ -351,15 +357,8 @@
           <label class="check"><input type="checkbox" id="askAnon"> Enviar sin mi nombre</label>
           <button class="btn" type="submit" id="askBtn"><span id="sendIc"></span>Enviar</button>
         </div>
-        <p class="muted small" id="askNote"></p>
       </form>
-      <div class="row" style="justify-content:space-between">
-        <div class="seg" role="tablist" style="flex:1; max-width:300px">
-          <button role="tab" aria-selected="true" data-psort="votos">Más votadas</button>
-          <button role="tab" aria-selected="false" data-psort="recientes">Recientes</button>
-        </div>
-        <span class="muted small" id="pCount"></span>
-      </div>
+      <div class="row" style="justify-content:space-between"><div class="eyebrow">Historial de preguntas</div><span class="muted small" id="pCount"></span></div>
       <div class="stack" id="pList"></div>
     </section>
 
@@ -397,7 +396,7 @@
   /* -------- estado -------- */
   const S = {
     me: EV.me(), event: null, sessions: [], questions: [], answers: [], sq: [], myVotes: new Set(), photos: [],
-    tab: 'inicio', fseg: 'subir', gfilter: 'todas', psort: 'votos', queue: [], editing: new Set(), lbIndex: -1,
+    tab: 'inicio', fseg: 'subir', gfilter: 'todas', queue: [], editing: new Set(), lbIndex: -1,
     seenOpen: new Set(EV.ls.get('ev-seen-' + EID, []))
   };
 
@@ -452,13 +451,15 @@
     return uid;
   }
 
+  $('#nameInput').addEventListener('input', () => { $('#gateErr').hidden = true; $('#nameInput').classList.remove('bad'); });
   $('#gateForm').addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const name = $('#nameInput').value.trim().replace(/\s+/g, ' ');
     const err = $('#gateErr');
-    if (name.length < 2) { err.textContent = 'Escribe tu nombre (mínimo 2 letras).'; err.hidden = false; return; }
-    err.hidden = true;
-    const b = $('#gateBtn'); b.disabled = true; b.textContent = 'Entrando…';
+    const inp = $('#nameInput');
+    if (name.length < 2) { err.textContent = 'Escribe tu nombre'; err.hidden = false; inp.classList.add('bad'); inp.focus(); return; }
+    err.hidden = true; inp.classList.remove('bad');
+    const b = $('#gateBtn'); b.disabled = true; b.firstElementChild.textContent = 'Ingresando…';
     try {
       await registerParticipant(name);
       EV.log('registro', { name });
@@ -466,7 +467,7 @@
       startApp();
     } catch (e) {
       err.textContent = errMsg(e); err.hidden = false;
-    } finally { b.disabled = false; b.textContent = 'Entrar al evento'; }
+    } finally { b.disabled = false; b.firstElementChild.textContent = 'Ingresar'; }
   });
 
   let started = false;
@@ -478,6 +479,15 @@
     go(['inicio', 'fotos', 'vivo', 'ponente', 'encuesta'].includes(initial) ? initial : 'inicio', true);
     await loadAll();
     db.subscribe(['ev_event', 'ev_sessions', 'ev_questions', 'ev_answers', 'ev_speaker_q', 'ev_photos'], onChange);
+    // el horario avanza solo: cada 20 s revisa si cambió la conferencia en curso
+    S.curId = (currentSession() || {}).id || null;
+    setInterval(async () => {
+      const id = (currentSession() || {}).id || null;
+      if (id === S.curId) return;
+      S.curId = id;
+      try { await loaders.ev_answers(); } catch {}
+      renderAll();
+    }, 20000);
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
@@ -492,13 +502,11 @@
     },
     async ev_speaker_q() {
       S.sq = await db.select('ev_speaker_q', { order: ['created_at', 'desc'] });
-      const mine = await db.select('ev_sq_votes', { eq: { participant_id: S.me.id } });
-      S.myVotes = new Set(mine.map((v) => v.question_id));
     },
     async ev_photos() { S.photos = await db.select('ev_photos', { order: ['created_at', 'desc'] }); }
   };
   function relevantQuestionIds() {
-    const cur = S.event && S.event.current_session_id;
+    const cur = (currentSession() || {}).id;
     return S.questions.filter((q) => q.scope === 'encuesta' || q.session_id === cur).map((q) => q.id);
   }
 
@@ -542,7 +550,6 @@
     try { history.replaceState(null, '', '#' + tab); } catch {}
     if (tab === 'vivo') { openQuestions().forEach((q) => S.seenOpen.add(q.id)); EV.ls.set('ev-seen-' + EID, Array.from(S.seenOpen)); }
     renderDots();
-    if (!silent) EV.log('vista', { seccion: tab });
   }
   document.addEventListener('click', (e) => {
     const t = e.target.closest('[data-tab],[data-go]');
@@ -558,7 +565,7 @@
       <div class="eyebrow">Participas como</div>
       <label class="field" for="rename"><span>Nombre</span><input id="rename" type="text" maxlength="80" value="${esc(S.me.name)}"></label>
       <div class="row"><button class="btn grow" id="saveName">Guardar nombre</button><button class="btn ghost" id="closeSheet">Cerrar</button></div>
-      <p class="muted small">El cambio aplica a lo que envíes desde ahora.</p></div>`;
+</div>`;
     sh.hidden = false;
     sh.onclick = (e) => { if (e.target === sh || e.target.id === 'closeSheet') sh.hidden = true; };
     $('#saveName').onclick = async () => {
@@ -570,7 +577,8 @@
   });
 
   /* -------- render general -------- */
-  function currentSession() { return S.sessions.find((s) => s.id === (S.event && S.event.current_session_id)) || null; }
+  function currentSession() { return EV.currentSession(S.event, S.sessions); }
+  function askSession() { return EV.askTarget(S.event, S.sessions); }
   function sessionQuestions() { const c = currentSession(); return c ? S.questions.filter((q) => q.scope === 'sesion' && q.session_id === c.id) : []; }
   function openQuestions() { return sessionQuestions().filter((q) => q.is_open); }
   function surveyQuestions() { return S.questions.filter((q) => q.scope === 'encuesta'); }
@@ -633,10 +641,10 @@
     $('#iInfoCard').hidden = !(e.description || e.wifi || e.contact);
 
     const nOpen = openQuestions().length;
-    $('#tVivo').textContent = nOpen ? `${nOpen} ${nOpen === 1 ? 'pregunta abierta' : 'preguntas abiertas'}` : 'Responde y ve resultados';
+    $('#tVivo').textContent = nOpen ? `${nOpen} ${nOpen === 1 ? 'pregunta abierta' : 'preguntas abiertas'}` : 'Sin preguntas por ahora';
     const nPh = visiblePhotos().length;
-    $('#tFot').textContent = nPh ? `${nPh} ${nPh === 1 ? 'foto' : 'fotos'} compartidas` : 'Comparte lo que vives';
-    $('#tEnc').textContent = e.survey_open ? (surveyQuestions().every((q) => myAnswer(q.id)) ? 'Ya respondiste, gracias' : 'Abierta, cuéntanos') : 'Se abrirá al final';
+    $('#tFot').textContent = nPh ? `${nPh} ${nPh === 1 ? 'foto' : 'fotos'} compartidas` : 'Toma o sube fotos';
+    $('#tEnc').textContent = e.survey_open ? (surveyQuestions().every((q) => myAnswer(q.id)) ? 'Ya respondiste, gracias' : 'Abierta, cuéntanos') : 'Al final del evento';
   }
 
   /* -------- FOTOS -------- */
@@ -656,7 +664,9 @@
     for (const f of Array.from(files || [])) {
       if (!/^image\//.test(f.type) && !/\.(heic|heif)$/i.test(f.name)) { toast(`${f.name} no es una imagen`, 'err'); continue; }
       try {
-        const { blob } = await EV.compressImage(f);
+        const { blob: small } = await EV.compressImage(f);
+        const e = S.event || {};
+        const blob = await EV.watermark(small, { title: e.name || '', line: [e.subtitle, e.starts_at ? fmt.date(e.starts_at) : ''].filter(Boolean).join(' · ') });
         S.queue.push({ id: EV.uuid(), blob, url: URL.createObjectURL(blob), caption: '' });
       } catch (e) { toast(errMsg(e), 'err'); }
     }
@@ -722,7 +732,7 @@
     }
     const empty = $('#gEmpty');
     empty.hidden = !!list.length; grid.hidden = !list.length;
-    empty.innerHTML = I('image') + (S.gfilter === 'mias' ? '<p>Aún no compartes fotos.</p><p class="small">Toca <strong>Compartir</strong> para tomar o subir una.</p>' : '<p>La galería está vacía.</p><p class="small">Sé la primera persona en compartir una foto del evento.</p>');
+    empty.innerHTML = I('image') + (S.gfilter === 'mias' ? '<p>Aún no compartes fotos.</p>' : '<p>Aún no hay fotos.</p>');
   }
   $('#grid').addEventListener('click', (e) => { const b = e.target.closest('button[data-i]'); if (b) openLightbox(+b.dataset.i); });
 
@@ -731,13 +741,22 @@
     S.lbIndex = i; const p = list[i];
     const lb = $('#lightbox');
     lb.innerHTML = `<div class="bar"><span class="muted small">${i + 1} / ${list.length}</span>
-        <div class="row">${p.participant_id === S.me.id ? `<button class="iconbtn" id="lbDel" aria-label="Eliminar mi foto">${I('trash')}</button>` : ''}
+        <div class="row"><button class="iconbtn" id="lbSave" aria-label="Guardar en mi teléfono">${I('download')}</button>${p.participant_id === S.me.id ? `<button class="iconbtn" id="lbDel" aria-label="Eliminar mi foto">${I('trash')}</button>` : ''}
         <button class="iconbtn" id="lbClose" aria-label="Cerrar">${I('x')}</button></div></div>
       <div class="stage"><img src="${esc(p.url)}" alt="${esc(p.caption || 'Foto del evento')}"></div>
       ${list.length > 1 ? `<button class="iconbtn nav prev" aria-label="Anterior" style="transform:translateY(-50%) rotate(180deg)">${I('arrow')}</button><button class="iconbtn nav next" aria-label="Siguiente">${I('arrow')}</button>` : ''}
       <div class="meta"><div><strong>${esc(p.participant_name || 'Participante')}</strong><span class="muted small">${fmt.rel(p.created_at)}${p.hidden ? ' · oculta por moderación' : ''}</span>${p.caption ? `<p style="margin-top:6px">${esc(p.caption)}</p>` : ''}</div></div>`;
     lb.hidden = false;
     $('#lbClose').onclick = closeLightbox;
+    $('#lbSave').onclick = async () => {
+      try {
+        const blob = await (await fetch(p.url)).blob();
+        const file = new File([blob], `convencion-hse-${p.id.slice(0, 8)}.jpg`, { type: 'image/jpeg' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); }
+        else EV.download(file.name, blob);
+        EV.log('foto_descargada', { path: p.path });
+      } catch (x) { if (x && x.name !== 'AbortError') window.open(p.url, '_blank'); }
+    };
     const prev = $('.prev', lb), next = $('.next', lb);
     if (prev) prev.onclick = () => openLightbox((i - 1 + list.length) % list.length);
     if (next) next.onclick = () => openLightbox((i + 1) % list.length);
@@ -760,7 +779,7 @@
   /* -------- EN VIVO -------- */
   function sessionHeadHTML(label) {
     const cur = currentSession();
-    if (!cur) return `<div class="eyebrow">${label}</div><h2>No hay conferencia en curso</h2><p class="muted small">Cuando inicie la siguiente conferencia, sus preguntas aparecerán aquí.</p>`;
+    if (!cur) return `<div class="eyebrow">${label}</div><h2>Sin conferencia en este momento</h2>`;
     return `<div class="eyebrow">${label} · ${fmt.time(cur.starts_at)}${cur.room ? ' · ' + esc(cur.room) : ''}</div><h2>${esc(cur.title)}</h2><p class="muted small">${esc(fmt.sessLine(cur))}</p>`;
   }
   const typeHint = { opcion: 'Elige una opción', multiple: 'Elige todas las que apliquen', escala: 'Califica del 1 al 5', nube: 'Responde con una o dos palabras', abierta: 'Respuesta libre' };
@@ -770,7 +789,7 @@
     const qs = sessionQuestions().filter((q) => q.is_open || myAnswer(q.id) || S.answers.some((a) => a.question_id === q.id));
     const list = $('#vList');
     if (!qs.length) {
-      list.innerHTML = `<div class="card empty">${I('live')}<p>Todavía no hay preguntas abiertas.</p><p class="small">El moderador las abrirá durante la conferencia. Esta pantalla se actualiza sola.</p></div>`;
+      list.innerHTML = `<div class="card empty">${I('live')}<p>Sin preguntas por ahora.</p></div>`;
       list.dataset.sig = ''; return;
     }
     // ordenar: abiertas sin responder primero
@@ -880,52 +899,39 @@
   }
 
   /* -------- PONENTE -------- */
-  $$('[data-psort]').forEach((b) => b.addEventListener('click', () => {
-    S.psort = b.dataset.psort; $$('[data-psort]').forEach((x) => x.setAttribute('aria-selected', x === b)); renderPonente();
-  }));
+  function ponenteHeadHTML(t) {
+    if (!t) return `<div class="eyebrow">Preguntas al ponente</div><h2>Sin conferencia en este momento</h2>`;
+    return `<div class="eyebrow">Preguntas para · ${fmt.time(t.starts_at)}</div><h2>${esc(t.title)}</h2><p class="muted small">${esc(fmt.sessLine(t))}</p>`;
+  }
   function renderPonente() {
-    $('#pHead').innerHTML = sessionHeadHTML('Preguntas para');
-    const cur = currentSession();
-    $('#askForm').hidden = !cur;
-    $('#askNote').textContent = S.event && S.event.moderate_questions ? 'Las preguntas pasan por revisión antes de mostrarse al público.' : 'Tu pregunta aparecerá de inmediato en la lista y en la pantalla del evento.';
-    const list = S.sq.filter((q) => cur && q.session_id === cur.id && (q.status === 'approved' || q.status === 'answered' || q.participant_id === S.me.id));
-    list.sort(S.psort === 'votos' ? (a, b) => (a.status === 'answered') - (b.status === 'answered') || b.votes - a.votes || (b.created_at > a.created_at ? 1 : -1) : (a, b) => (b.created_at > a.created_at ? 1 : -1));
+    const t = askSession();
+    $('#pHead').innerHTML = ponenteHeadHTML(t);
+    $('#askForm').hidden = !t;
+    const list = t ? S.sq.filter((q) => q.session_id === t.id && (q.status === 'approved' || q.status === 'answered' || q.participant_id === S.me.id)) : [];
+    list.sort((a, b) => (b.created_at > a.created_at ? 1 : -1));
     $('#pCount').textContent = list.length ? `${list.length} ${list.length === 1 ? 'pregunta' : 'preguntas'}` : '';
     $('#pList').innerHTML = list.length ? list.map((q) => {
       const own = q.participant_id === S.me.id;
-      const voted = S.myVotes.has(q.id);
-      const tag = q.status === 'pending' ? '<span class="pill warn">En revisión</span>' : q.status === 'answered' ? '<span class="pill ok">Respondida</span>' : q.status === 'hidden' ? '<span class="pill">No publicada</span>' : '';
-      return `<div class="sq ${q.status === 'answered' ? 'answered' : ''}"><div><p>${esc(q.text)}</p>
-        <div class="by"><span>${q.anonymous ? 'Anónimo' : esc(q.participant_name || 'Participante')}${own ? ' (tú)' : ''}</span><span>·</span><span>${fmt.rel(q.created_at)}</span>${tag}</div></div>
-        <button class="vote" data-vote="${q.id}" aria-pressed="${voted}" aria-label="Votar esta pregunta" ${q.status === 'pending' || q.status === 'hidden' ? 'disabled' : ''}>${I('up')}<span>${q.votes || 0}</span></button></div>`;
-    }).join('') : (cur ? `<div class="card empty">${I('chat')}<p>Aún no hay preguntas.</p><p class="small">Escribe la primera; las demás personas podrán votarla.</p></div>` : '');
+      const tag = q.status === 'answered' ? '<span class="pill ok">Respondida</span>' : q.status === 'hidden' ? '<span class="pill">Oculta</span>' : '';
+      return `<div class="sq hist ${own ? 'mine' : ''} ${q.status === 'answered' ? 'answered' : ''}"><div><p>${esc(q.text)}</p>
+        <div class="by"><span>${q.anonymous ? 'Anónimo' : esc(q.participant_name || 'Participante')}${own ? ' (tú)' : ''}</span><span>·</span><span>${fmt.time(q.created_at)}</span>${tag}</div></div></div>`;
+    }).join('') : (t ? `<div class="card empty">${I('chat')}<p>Aún no hay preguntas.</p></div>` : '');
   }
   $('#askForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const cur = currentSession(); if (!cur) return;
+    const t = askSession(); if (!t) return;
     const text = $('#askText').value.trim();
     if (text.length < 3) return toast('Escribe tu pregunta', 'err');
     const b = $('#askBtn'); b.disabled = true;
     try {
-      const row = await db.insert('ev_speaker_q', { event_id: EID, session_id: cur.id, participant_id: S.me.id, participant_name: S.me.name, anonymous: $('#askAnon').checked, text });
+      const row = await db.insert('ev_speaker_q', { event_id: EID, session_id: t.id, participant_id: S.me.id, participant_name: S.me.name, anonymous: $('#askAnon').checked, text });
       S.sq.unshift(row);
-      EV.log('pregunta_ponente', { sesion: cur.title, texto: text, anonima: $('#askAnon').checked });
+      EV.log('pregunta_ponente', { sesion: t.title, texto: text, anonima: $('#askAnon').checked });
       $('#askText').value = '';
-      toast(row.status === 'pending' ? 'Enviada. Aparecerá cuando el moderador la apruebe.' : 'Pregunta publicada');
-      S.psort = 'recientes'; $$('[data-psort]').forEach((x) => x.setAttribute('aria-selected', x.dataset.psort === 'recientes'));
+      toast('Pregunta enviada');
       renderPonente();
     } catch (err) { toast(errMsg(err), 'err'); }
     b.disabled = false;
-  });
-  $('#pList').addEventListener('click', async (e) => {
-    const b = e.target.closest('[data-vote]'); if (!b || b.disabled) return;
-    const id = b.dataset.vote; const q = S.sq.find((x) => x.id === id); if (!q) return;
-    b.disabled = true;
-    try {
-      if (S.myVotes.has(id)) { await db.remove('ev_sq_votes', { question_id: id, participant_id: S.me.id }); S.myVotes.delete(id); q.votes = Math.max(0, (q.votes || 1) - 1); }
-      else { await db.insert('ev_sq_votes', { question_id: id, participant_id: S.me.id, event_id: EID }); S.myVotes.add(id); q.votes = (q.votes || 0) + 1; EV.log('voto_pregunta', { texto: q.text }); }
-    } catch (err) { if (!/duplicate/i.test(err.message || '')) toast(errMsg(err), 'err'); }
-    renderPonente();
   });
 
   /* -------- ENCUESTA -------- */
@@ -935,7 +941,7 @@
     const e = S.event || {};
     const qs = surveyQuestions();
     if (!e.survey_open) {
-      host.innerHTML = `<div class="card empty">${I('star')}<p>La encuesta se abrirá al final del evento.</p><p class="small">Te avisaremos con un punto rojo en esta pestaña.</p></div>`;
+      host.innerHTML = `<div class="card empty">${I('star')}<p>Disponible al final del evento.</p></div>`;
       host.dataset.mode = 'closed'; return;
     }
     const done = qs.length && qs.every((q) => myAnswer(q.id));
@@ -950,7 +956,7 @@
     if (host.dataset.mode === 'form' && host.dataset.sig === qs.map((q) => q.id + q.text + q.qtype).join()) return; // no pisar lo que está escribiendo
     host.dataset.mode = 'form'; host.dataset.sig = qs.map((q) => q.id + q.text + q.qtype).join();
     qs.forEach((q) => { const m = myAnswer(q.id); if (m && svDraft[q.id] === undefined) svDraft[q.id] = m.value; });
-    host.innerHTML = `<p class="muted">Son ${qs.length} preguntas. Te toma menos de un minuto.</p>` + qs.map((q, idx) => {
+    host.innerHTML = qs.map((q, idx) => {
       const v = svDraft[q.id] || {};
       let ui = '';
       if (q.qtype === 'escala') ui = `<div class="stars-pick" data-sv="${q.id}">${[1, 2, 3, 4, 5].map((n) => `<button type="button" data-n="${n}" class="${(v.n || 0) >= n ? 'on' : ''}" aria-label="${n} de 5"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg></button>`).join('')}</div>`;
