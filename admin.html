@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=9">
+<link rel="stylesheet" href="styles.css?v=11">
 <style>
   body { min-height: 100dvh; }
   .layout { display: grid; grid-template-columns: 230px 1fr; min-height: 100dvh; }
@@ -291,9 +291,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="config.js?v=9"></script>
-<script src="icons.js?v=9"></script>
-<script src="common.js?v=9"></script>
+<script src="config.js?v=11"></script>
+<script src="icons.js?v=11"></script>
+<script src="common.js?v=11"></script>
 <script>
 (function () {
   'use strict';
@@ -303,7 +303,7 @@
   const db = EV.init({ storageKey: 'ev-admin-' + EID });
   if (EV.DEMO) $('#demoBanner').hidden = false;
 
-  const S = { event: null, sessions: [], questions: [], answers: [], sq: [], photos: [], people: [], activity: [], page: 'vivo', pqFilter: 'todas', qSession: null, pqSession: null };
+  const S = { event: null, sessions: [], questions: [], answers: [], sq: [], photos: [], people: [], activity: [], page: 'vivo', pqFilter: 'todas', qSession: null, pqSession: '__all' };
 
   EV.onStatus((s) => { const c = $('#conn'); c.className = 'pill ' + (s === 'live' ? 'live' : ''); c.textContent = s === 'live' ? 'En vivo' : s === 'demo' ? 'Demo' : 'Reconectando'; });
 
@@ -349,7 +349,6 @@
       try { await db.insert('ev_event', { id: EID, name: 'Mi evento' }); await L.ev_event(); } catch (e) { toast(errMsg(e), 'err'); }
     }
     S.qSession = curId() || S.sessions[0]?.id || '__encuesta';
-    S.pqSession = EV.askTarget(S.event, S.sessions)?.id || S.sessions.find((x) => x.kind !== 'pausa')?.id || null;
     const h = location.hash.replace('#', ''); if (h && $(`[data-page="${h}"]`)) S.page = h;
     show(S.page); renderAll();
     db.subscribe(['ev_event', 'ev_sessions', 'ev_questions', 'ev_answers', 'ev_speaker_q', 'ev_photos', 'ev_participants', 'ev_activity'], (t, p) => {
@@ -363,7 +362,7 @@
     setInterval(() => { pend.add('ev_activity'); flush(); }, 20000);
     // el horario avanza solo: si cambia la conferencia en curso, actualiza el panel
     let lastCur = curId();
-    setInterval(() => { const id = curId(); if (id !== lastCur) { lastCur = id; const t = EV.askTarget(S.event, S.sessions); if (t) S.pqSession = t.id; renderAll(); } }, 20000);
+    setInterval(() => { const id = curId(); if (id !== lastCur) { lastCur = id; renderAll(); } }, 20000);
   }
   const pend = new Set();
   const flush = EV.debounce(async () => { const t = Array.from(pend); pend.clear(); try { for (const n of t) if (L[n]) await L[n](); } catch (e) { console.warn(e); } renderAll(); }, 300);
@@ -435,7 +434,7 @@
   $('#curSel').addEventListener('change', (e) => {
     const id = e.target.value || null;
     patchEvent({ current_session_id: id, screen_question_id: null }, id ? 'Conferencia fijada' : 'Modo automático por horario');
-    S.pqSession = id || S.pqSession; S.qSession = id || S.qSession;
+    S.qSession = id || S.qSession;
   });
   $('#modes').addEventListener('click', (e) => { const b = e.target.closest('[data-mode]'); if (b) patchEvent({ screen_mode: b.dataset.mode }, 'Pantalla actualizada'); });
   $('#liveList').addEventListener('click', async (e) => {
@@ -453,12 +452,13 @@
 
   /* -------- PONENTE -------- */
   function renderPonente() {
-    $('#pqSession').innerHTML = S.sessions.filter((s) => s.kind !== 'pausa').map((s) => `<option value="${s.id}" ${s.id === S.pqSession ? 'selected' : ''}>${fmt.time(s.starts_at)} · ${esc(s.title)}${s.id === curId() ? ' (en curso)' : ''}</option>`).join('');
-    const list = S.sq.filter((q) => q.session_id === S.pqSession && (S.pqFilter === 'todas' || q.status === S.pqFilter))
+    const sesName = (id) => (S.sessions.find((x) => x.id === id) || {}).title || 'Sin conferencia';
+    $('#pqSession').innerHTML = `<option value="__all" ${S.pqSession === '__all' ? 'selected' : ''}>Todas las conferencias</option>` + S.sessions.filter((s) => s.kind !== 'pausa').map((s) => `<option value="${s.id}" ${s.id === S.pqSession ? 'selected' : ''}>${fmt.time(s.starts_at)} · ${esc(s.title)}${s.id === curId() ? ' (en curso)' : ''}</option>`).join('');
+    const list = S.sq.filter((q) => (S.pqSession === '__all' || q.session_id === S.pqSession) && (S.pqFilter === 'todas' || q.status === S.pqFilter))
       .sort((a, b) => (b.created_at > a.created_at ? 1 : -1));
     const badge = { pending: '<span class="pill warn">Por revisar</span>', approved: '<span class="pill ok">Publicada</span>', answered: '<span class="pill accent">Respondida</span>', hidden: '<span class="pill">Oculta</span>' };
     $('#pqList').innerHTML = list.length ? list.map((q) => `<div class="item"><div class="item-head"><div><h3 style="font-weight:500">${esc(q.text)}</h3>
-      <p class="muted small" style="margin-top:6px">${esc(q.participant_name || '')}${q.anonymous ? ' (anónimo en pantalla)' : ''} · ${fmt.time(q.created_at)}</p></div>${badge[q.status]}</div>
+      <p class="muted small" style="margin-top:6px">${esc(q.participant_name || '')}${q.anonymous ? ' (anónimo en pantalla)' : ''} · ${fmt.time(q.created_at)} · ${esc(sesName(q.session_id))}</p></div>${badge[q.status]}</div>
       <div class="actions">
         ${q.status === 'hidden' || q.status === 'pending' ? `<button class="btn sm" data-st="approved" data-id="${q.id}">${I('check')}Mostrar</button>` : ''}
         ${q.status !== 'answered' ? `<button class="btn soft sm" data-st="answered" data-id="${q.id}">Marcar respondida</button>` : ''}
