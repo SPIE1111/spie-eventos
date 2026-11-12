@@ -102,7 +102,7 @@
     <label class="field" for="lPin"><span>PIN de moderador</span><input id="lPin" type="password" inputmode="numeric" autocomplete="off" minlength="4" required></label>
     <button class="btn block" type="submit" id="lBtn">Entrar</button>
     <p class="small" id="lErr" style="color:var(--danger)" hidden></p>
-    <p class="muted small">El PIN se define en Supabase con el archivo supabase/admin-pin.sql.</p>
+    
   </form>
 </section>
 
@@ -141,8 +141,10 @@
         <div class="kpi"><b id="kPh">0</b><span>Fotos compartidas</span></div>
       </div>
       <div class="card stack">
-        <label class="field" for="curSel"><span>Conferencia en curso (lo que ven los participantes)</span>
-          <select id="curSel"></select></label>
+        <div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px">
+          <div><div class="eyebrow">En curso ahora</div><h2 id="curNow" style="font-size:20px;margin-top:4px">—</h2><p class="muted small" id="curHow"></p></div>
+        </div>
+        <label class="field" for="curSel"><span>Conferencia en curso</span><select id="curSel"></select></label>
       </div>
       <div class="card stack">
         <div class="row" style="justify-content:space-between"><strong>Pantalla pública</strong><a class="btn ghost sm" href="pantalla.html" target="_blank" rel="noopener">Abrir pantalla</a></div>
@@ -152,7 +154,6 @@
           <button data-mode="ponente"><span data-ic="chat"></span>Preguntas al ponente</button>
           <button data-mode="galeria"><span data-ic="image"></span>Galería</button>
         </div>
-        <p class="muted small">Automático: muestra la pregunta abierta (o la fijada) con sus resultados y, al lado, las preguntas al ponente más votadas. Si hay varias abiertas, rota cada 15 s.</p>
       </div>
       <div class="ptitle"><h2 style="font-size:19px">Preguntas de esta conferencia</h2><button class="btn soft sm" data-p="contenido">Editar preguntas</button></div>
       <div class="list" id="liveList"></div>
@@ -160,13 +161,12 @@
 
     <!-- PONENTE -->
     <section data-page="ponente" hidden>
-      <div class="ptitle"><h1>Preguntas al ponente</h1>
-        <label class="switch"><input type="checkbox" id="modSwitch"> Revisar antes de publicar</label></div>
+      <div class="ptitle"><h1>Preguntas al ponente</h1></div>
       <div class="row">
         <select id="pqSession" style="max-width:420px"></select>
         <div class="seg" id="pqFilter" style="flex:1;max-width:460px">
-          <button aria-selected="true" data-f="todas">Todas</button><button aria-selected="false" data-f="pending">Por revisar</button>
-          <button aria-selected="false" data-f="approved">Publicadas</button><button aria-selected="false" data-f="answered">Respondidas</button><button aria-selected="false" data-f="hidden">Ocultas</button>
+          <button aria-selected="true" data-f="todas">Todas</button>
+          <button aria-selected="false" data-f="approved">Sin responder</button><button aria-selected="false" data-f="answered">Respondidas</button><button aria-selected="false" data-f="hidden">Ocultas</button>
         </div>
       </div>
       <div class="list" id="pqList"></div>
@@ -266,7 +266,7 @@
       <div class="two">
         <div class="stack"><strong>Participantes <span class="muted" id="pplCount"></span></strong>
           <input type="text" id="pplSearch" placeholder="Buscar por nombre">
-          <div class="table-wrap" style="max-height:60vh"><table><thead><tr><th>Nombre</th><th>Registro</th><th>Acciones</th></tr></thead><tbody id="pplBody"></tbody></table></div></div>
+          <div class="table-wrap" style="max-height:60vh"><table><thead><tr><th>Nombre</th><th>Registro</th><th>Respuestas</th><th>Preguntas</th><th>Fotos</th><th>Última actividad</th></tr></thead><tbody id="pplBody"></tbody></table></div></div>
         <div class="stack"><strong>Actividad reciente</strong>
           <div class="table-wrap" style="max-height:66vh"><table><thead><tr><th>Hora</th><th>Participante</th><th>Acción</th></tr></thead><tbody id="actBody"></tbody></table></div></div>
       </div>
@@ -279,7 +279,6 @@
         <div class="qr" id="qrBig"></div>
         <div class="stack">
           <label class="field" for="qrUrl"><span>Enlace al que lleva el QR</span><input id="qrUrl" type="url"></label>
-          <p class="muted small">Por defecto es la URL donde publicaste la app (GitHub Pages). Para que no cambie, fíjala en <span class="mono">config.js → APP_URL</span>.</p>
           <div class="row">
             <button class="btn" id="qrPng"><span data-ic="download"></span>Descargar PNG (alta resolución)</button>
             <button class="btn ghost" id="qrCopy">Copiar enlace</button>
@@ -339,7 +338,7 @@
     async ev_speaker_q() { S.sq = await db.select('ev_speaker_q', { order: ['created_at', 'desc'] }); },
     async ev_photos() { S.photos = await db.select('ev_photos', { order: ['created_at', 'desc'] }); },
     async ev_participants() { S.people = await db.select('ev_participants', { order: ['created_at', 'desc'] }); },
-    async ev_activity() { S.activity = await db.select('ev_activity', { order: ['created_at', 'desc'], limit: 400 }); }
+    async ev_activity() { S.activity = (await db.select('ev_activity', { order: ['created_at', 'desc'], limit: 600 })).filter((a) => a.action !== 'vista'); }
   };
   async function start() {
     $('#shell').hidden = false;
@@ -349,18 +348,22 @@
       // crea el evento si no existe aún
       try { await db.insert('ev_event', { id: EID, name: 'Mi evento' }); await L.ev_event(); } catch (e) { toast(errMsg(e), 'err'); }
     }
-    S.qSession = S.event?.current_session_id || S.sessions[0]?.id || '__encuesta';
-    S.pqSession = S.event?.current_session_id || S.sessions[0]?.id || null;
+    S.qSession = curId() || S.sessions[0]?.id || '__encuesta';
+    S.pqSession = EV.askTarget(S.event, S.sessions)?.id || S.sessions.find((x) => x.kind !== 'pausa')?.id || null;
     const h = location.hash.replace('#', ''); if (h && $(`[data-page="${h}"]`)) S.page = h;
     show(S.page); renderAll();
-    db.subscribe(['ev_event', 'ev_sessions', 'ev_questions', 'ev_answers', 'ev_speaker_q', 'ev_photos', 'ev_participants'], (t, p) => {
+    db.subscribe(['ev_event', 'ev_sessions', 'ev_questions', 'ev_answers', 'ev_speaker_q', 'ev_photos', 'ev_participants', 'ev_activity'], (t, p) => {
       if (t === 'ev_answers' && p && p.new && p.new.id) {
         const i = S.answers.findIndex((a) => a.id === p.new.id); if (i >= 0) S.answers[i] = p.new; else S.answers.push(p.new);
         renderLiveResults(); renderKpis(); return;
       }
-      pend.add(t); if (t === 'ev_participants' || t === 'ev_photos' || t === 'ev_speaker_q') pend.add('ev_activity'); flush();
+      if (t === 'ev_activity' && p && p.new && p.new.id) { if (p.new.action !== 'vista' && !S.activity.some((a) => a.id === p.new.id)) { S.activity.unshift(p.new); renderRegistro(); } return; }
+      pend.add(t); flush();
     });
     setInterval(() => { pend.add('ev_activity'); flush(); }, 20000);
+    // el horario avanza solo: si cambia la conferencia en curso, actualiza el panel
+    let lastCur = curId();
+    setInterval(() => { const id = curId(); if (id !== lastCur) { lastCur = id; const t = EV.askTarget(S.event, S.sessions); if (t) S.pqSession = t.id; renderAll(); } }, 20000);
   }
   const pend = new Set();
   const flush = EV.debounce(async () => { const t = Array.from(pend); pend.clear(); try { for (const n of t) if (L[n]) await L[n](); } catch (e) { console.warn(e); } renderAll(); }, 300);
@@ -381,7 +384,8 @@
     renderKpis(); renderVivo(); renderPonente(); renderContenido(); renderEvento(); renderGaleria(); renderEncuesta(); renderRegistro();
   }
   const sesName = (id) => (S.sessions.find((s) => s.id === id) || {}).title || '—';
-  const curId = () => S.event?.current_session_id || null;
+  const curSes = () => EV.currentSession(S.event, S.sessions);
+  const curId = () => curSes()?.id || null;
   async function patchEvent(patch, msg) {
     try { await db.update('ev_event', { id: EID }, patch); S.event = { ...S.event, ...patch }; if (msg) toast(msg); renderAll(); }
     catch (e) { toast(errMsg(e), 'err'); }
@@ -397,7 +401,11 @@
   }
   function renderVivo() {
     const sel = $('#curSel');
-    sel.innerHTML = `<option value="">— Ninguna (entre conferencias) —</option>` + S.sessions.map((s) => `<option value="${s.id}" ${s.id === curId() ? 'selected' : ''}>${fmt.time(s.starts_at)} · ${esc(s.title)}${s.speaker ? ' — ' + esc(s.speaker) : ''}</option>`).join('');
+    const manual = S.event?.current_session_id || '';
+    sel.innerHTML = `<option value="" ${!manual ? 'selected' : ''}>Automático · según el horario de la agenda</option>` + S.sessions.map((s) => `<option value="${s.id}" ${s.id === manual ? 'selected' : ''}>Fijar: ${fmt.time(s.starts_at)} · ${esc(s.title)}</option>`).join('');
+    const c = curSes();
+    $('#curNow').textContent = c ? `${fmt.time(c.starts_at)} · ${c.title}` : 'Sin conferencia en este momento';
+    $('#curHow').textContent = manual ? 'Fijada manualmente' : 'Automático por horario';
     $$('#modes [data-mode]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.mode === (S.event?.screen_mode || 'auto')));
     const qs = S.questions.filter((q) => q.scope === 'sesion' && q.session_id === curId());
     const host = $('#liveList');
@@ -410,12 +418,12 @@
         return `<div class="item ${q.is_open ? 'open' : ''}"><div class="item-head"><div><div class="eyebrow">${typeName[q.qtype]}</div><h3>${esc(q.text)}</h3></div>
           <div class="chips">${q.is_open ? '<span class="pill live">Abierta</span>' : '<span class="pill">Cerrada</span>'}${pinned ? '<span class="pill accent">En pantalla</span>' : ''}</div></div>
           <div class="actions">
-            <button class="btn sm ${q.is_open ? 'danger' : ''}" data-open="${q.id}">${q.is_open ? I('stop') + 'Cerrar votación' : I('play') + 'Abrir votación'}</button>
+            <button class="btn sm ${q.is_open ? 'danger' : ''}" data-open="${q.id}">${q.is_open ? I('stop') + 'Cerrar votación' : I('play') + 'Reabrir votación'}</button>
             <button class="btn soft sm" data-pin="${q.id}">${I('screen')}${pinned ? 'Quitar de pantalla' : 'Fijar en pantalla'}</button>
             <button class="btn ghost sm" data-reset="${q.id}">${I('refresh')}Reiniciar respuestas</button>
           </div>
           <details class="res-wrap" data-q="${q.id}" ${q.is_open || openDetails.has(q.id) ? 'open' : ''}><summary>Resultados</summary><div class="res" data-res="${q.id}"></div></details></div>`;
-      }).join('') : `<div class="card empty">${I('live')}<p>${curId() ? 'Esta conferencia no tiene preguntas.' : 'Elige la conferencia en curso.'}</p>${curId() ? '<button class="btn sm" data-p="contenido">Crear preguntas</button>' : ''}</div>`;
+      }).join('') : `<div class="card empty">${I('live')}<p>${curId() ? 'Esta conferencia no tiene preguntas.' : 'Sin conferencia en este momento.'}</p>${curId() ? '<button class="btn sm" data-p="contenido">Crear preguntas</button>' : ''}</div>`;
     }
     renderLiveResults();
   }
@@ -425,9 +433,8 @@
   }
   $('#curSel').addEventListener('change', (e) => {
     const id = e.target.value || null;
-    patchEvent({ current_session_id: id, screen_question_id: null }, id ? 'Conferencia en curso actualizada' : 'Sin conferencia en curso');
+    patchEvent({ current_session_id: id, screen_question_id: null }, id ? 'Conferencia fijada' : 'Modo automático por horario');
     S.pqSession = id || S.pqSession; S.qSession = id || S.qSession;
-    EV.log('admin_sesion', { sesion: sesName(id) });
   });
   $('#modes').addEventListener('click', (e) => { const b = e.target.closest('[data-mode]'); if (b) patchEvent({ screen_mode: b.dataset.mode }, 'Pantalla actualizada'); });
   $('#liveList').addEventListener('click', async (e) => {
@@ -445,21 +452,19 @@
 
   /* -------- PONENTE -------- */
   function renderPonente() {
-    $('#modSwitch').checked = !!S.event?.moderate_questions;
-    $('#pqSession').innerHTML = S.sessions.map((s) => `<option value="${s.id}" ${s.id === S.pqSession ? 'selected' : ''}>${esc(s.title)}${s.id === curId() ? ' (en curso)' : ''}</option>`).join('');
+    $('#pqSession').innerHTML = S.sessions.filter((s) => s.kind !== 'pausa').map((s) => `<option value="${s.id}" ${s.id === S.pqSession ? 'selected' : ''}>${fmt.time(s.starts_at)} · ${esc(s.title)}${s.id === curId() ? ' (en curso)' : ''}</option>`).join('');
     const list = S.sq.filter((q) => q.session_id === S.pqSession && (S.pqFilter === 'todas' || q.status === S.pqFilter))
-      .sort((a, b) => (a.status === 'pending' ? -1 : 0) - (b.status === 'pending' ? -1 : 0) || b.votes - a.votes);
+      .sort((a, b) => (b.created_at > a.created_at ? 1 : -1));
     const badge = { pending: '<span class="pill warn">Por revisar</span>', approved: '<span class="pill ok">Publicada</span>', answered: '<span class="pill accent">Respondida</span>', hidden: '<span class="pill">Oculta</span>' };
     $('#pqList').innerHTML = list.length ? list.map((q) => `<div class="item"><div class="item-head"><div><h3 style="font-weight:500">${esc(q.text)}</h3>
-      <p class="muted small" style="margin-top:6px">${esc(q.participant_name || '')}${q.anonymous ? ' (se muestra como anónimo)' : ''} · ${fmt.rel(q.created_at)} · <span class="mono">${q.votes}</span> votos</p></div>${badge[q.status]}</div>
+      <p class="muted small" style="margin-top:6px">${esc(q.participant_name || '')}${q.anonymous ? ' (anónimo en pantalla)' : ''} · ${fmt.time(q.created_at)}</p></div>${badge[q.status]}</div>
       <div class="actions">
-        ${q.status !== 'approved' ? `<button class="btn sm" data-st="approved" data-id="${q.id}">${I('check')}Publicar</button>` : ''}
+        ${q.status === 'hidden' || q.status === 'pending' ? `<button class="btn sm" data-st="approved" data-id="${q.id}">${I('check')}Mostrar</button>` : ''}
         ${q.status !== 'answered' ? `<button class="btn soft sm" data-st="answered" data-id="${q.id}">Marcar respondida</button>` : ''}
         ${q.status !== 'hidden' ? `<button class="btn ghost sm" data-st="hidden" data-id="${q.id}">${I('eyeoff')}Ocultar</button>` : ''}
         <button class="btn danger sm" data-del="${q.id}">${I('trash')}Eliminar</button></div></div>`).join('')
       : `<div class="card empty">${I('chat')}<p>No hay preguntas en este filtro.</p></div>`;
   }
-  $('#modSwitch').addEventListener('change', (e) => patchEvent({ moderate_questions: e.target.checked }, e.target.checked ? 'Las nuevas preguntas esperarán tu aprobación' : 'Las nuevas preguntas se publican de inmediato'));
   $('#pqSession').addEventListener('change', (e) => { S.pqSession = e.target.value; renderPonente(); });
   $('#pqFilter').addEventListener('click', (e) => { const b = e.target.closest('[data-f]'); if (!b) return; S.pqFilter = b.dataset.f; $$('#pqFilter button').forEach((x) => x.setAttribute('aria-selected', x === b)); renderPonente(); });
   $('#pqList').addEventListener('click', async (e) => {
@@ -556,7 +561,7 @@
         const old = S.questions.find((q) => q.id === id);
         if (JSON.stringify(old.options) !== JSON.stringify(options) && S.answers.some((a) => a.question_id === id)) toast('Cambiaste opciones de una pregunta con respuestas: revisa los resultados', 'err');
         await db.update('ev_questions', { id }, row);
-      } else await db.insert('ev_questions', { ...row, event_id: EID, scope: enc ? 'encuesta' : 'sesion', session_id: enc ? null : S.qSession, is_open: enc });
+      } else await db.insert('ev_questions', { ...row, event_id: EID, scope: enc ? 'encuesta' : 'sesion', session_id: enc ? null : S.qSession, is_open: true });
       await L.ev_questions(); resetQForm(); renderAll(); toast('Pregunta guardada');
     } catch (x) { toast(errMsg(x), 'err'); }
   });
@@ -635,7 +640,7 @@
   }
 
   /* -------- REGISTRO -------- */
-  const actName = { registro: 'Se registró', vista: 'Abrió sección', foto: 'Subió foto', foto_eliminada: 'Eliminó foto', respuesta: 'Respondió', encuesta: 'Respondió encuesta', pregunta_ponente: 'Preguntó al ponente', voto_pregunta: 'Votó pregunta', cambio_nombre: 'Cambió nombre', admin_sesion: 'Cambió conferencia' };
+  const actName = { registro: 'Se registró', foto: 'Subió foto', foto_descargada: 'Descargó foto', foto_eliminada: 'Eliminó foto', respuesta: 'Respondió', encuesta: 'Respondió encuesta', pregunta_ponente: 'Preguntó al ponente', voto_pregunta: 'Votó pregunta', cambio_nombre: 'Cambió nombre', admin_sesion: 'Cambió conferencia' };
   function actDetail(a) {
     const d = a.detail || {};
     if (a.action === 'vista') return d.seccion || '';
@@ -647,15 +652,20 @@
   }
   function renderRegistro() {
     const term = ($('#pplSearch').value || '').toLowerCase();
-    const counts = new Map(); S.activity.forEach((a) => counts.set(a.participant_id, (counts.get(a.participant_id) || 0) + 1));
     const ansCount = new Map(); S.answers.forEach((a) => ansCount.set(a.participant_id, (ansCount.get(a.participant_id) || 0) + 1));
     const ppl = S.people.filter((p) => !term || p.name.toLowerCase().includes(term));
     $('#pplCount').textContent = `(${S.people.length})`;
-    $('#pplBody').innerHTML = ppl.map((p) => `<tr><td>${esc(p.name)}</td><td class="mono">${fmt.time(p.created_at)}</td><td class="mono">${ansCount.get(p.id) || 0} resp.</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Sin participantes.</td></tr>';
+    const cnt = (arr, key = 'participant_id') => { const m = new Map(); arr.forEach((x) => m.set(x[key], (m.get(x[key]) || 0) + 1)); return m; };
+    const sqCount = cnt(S.sq), phCount = cnt(S.photos);
+    const lastAct = new Map(); S.activity.forEach((a) => { if (!lastAct.has(a.participant_id)) lastAct.set(a.participant_id, a.created_at); });
+    $('#pplBody').innerHTML = ppl.map((p) => `<tr><td>${esc(p.name)}</td><td class="mono">${fmt.time(p.created_at)}</td><td class="mono">${ansCount.get(p.id) || 0}</td><td class="mono">${sqCount.get(p.id) || 0}</td><td class="mono">${phCount.get(p.id) || 0}</td><td class="mono">${fmt.time(lastAct.get(p.id) || p.last_seen) || '—'}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">Sin participantes.</td></tr>';
     $('#actBody').innerHTML = S.activity.slice(0, 200).map((a) => `<tr><td class="mono">${fmt.time(a.created_at)}</td><td>${esc(a.participant_name || '')}</td><td>${esc(actName[a.action] || a.action)}<div class="muted small">${esc(actDetail(a))}</div></td></tr>`).join('') || '<tr><td colspan="3" class="muted">Sin actividad todavía.</td></tr>';
   }
   $('#pplSearch').addEventListener('input', renderRegistro);
-  $('#csvPeople').onclick = () => EV.download(`participantes-${EID}.csv`, EV.csv(S.people, [['name', 'Nombre'], ['created_at', 'Registro'], ['last_seen', 'Última visita'], ['id', 'ID']]));
+  $('#csvPeople').onclick = () => {
+    const c = (arr, id) => arr.filter((x) => x.participant_id === id).length;
+    EV.download(`participantes-${EID}.csv`, EV.csv(S.people, [['name', 'Nombre'], ['created_at', 'Registro'], [(p) => c(S.answers, p.id), 'Respuestas'], [(p) => c(S.sq, p.id), 'Preguntas al ponente'], [(p) => c(S.photos, p.id), 'Fotos'], ['last_seen', 'Última visita'], ['id', 'ID']]));
+  };
   $('#csvAct').onclick = async () => {
     let rows = S.activity; try { rows = await db.select('ev_activity', { order: ['created_at', 'asc'] }); } catch {}
     EV.download(`actividad-${EID}.csv`, EV.csv(rows, [['created_at', 'Fecha y hora'], ['participant_name', 'Participante'], [(a) => actName[a.action] || a.action, 'Acción'], [actDetail, 'Detalle'], ['detail', 'Datos']]));
