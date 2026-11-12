@@ -3,15 +3,16 @@
    Concepto: credencial de evento. Tinta azul marino, un color de acento
    configurable (config.js → ACCENT) y tipografía ancha para títulos.
    ===================================================================== */
-/* Identidad SPIE: azul grupo #0f1e5a como base, naranja de la subsidiaria #ff9600
-   como acento (rellenos y botones, con texto azul encima), rojo #cc0000 solo para alertas.
+/* Identidad SPIE con los tres colores principales: azul #0f1e5a (base y texto),
+   naranja #ff9600 (acentos, botones, dato principal) y rojo #cc0000 (en vivo y alertas).
+   Sin colores secundarios: barras no destacadas en un tinte del azul.
    Tipografía corporativa: Jost (respaldo Arial). */
 :root {
   --accent: #ff9600;
   --accent-ink: #0f1e5a;
   --accent-text: #b05a00;
   --accent-soft: #fff1dc;
-  --bar-rest: #ffc978;
+  --bar-rest: #c5cbe4;
   --brand: #0f1e5a;
   --ink: #0f1e5a;
   --chrome: #0f1e5a;
@@ -22,8 +23,9 @@
   --muted: #56608a;
   --line: #d8dbe8;
   --danger: #cc0000;
-  --warn: #b26a00;
-  --ok: #1b5a30;
+  --warn: #b05a00;
+  --ok: #0f1e5a;
+  --red: #cc0000;
   --star: #ff9600;
   --shadow: 0 1px 2px rgb(15 30 90 / .06), 0 6px 18px rgb(15 30 90 / .07);
   --radius: 14px;
@@ -35,15 +37,15 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --ink: #eef0f8; --chrome: #0a1442; --bg: #0b1130; --surface: #131b45; --surface-2: #1c2553; --fg: #eef0f8;
-    --muted: #a3abcb; --line: #2a3468; --danger: #ff5a5a; --warn: #ffb347; --ok: #5cc98a;
-    --accent-text: #ffad40; --accent-soft: #3a2a12; --bar-rest: #4a63c4;
+    --muted: #a3abcb; --line: #2a3468; --danger: #ff5a5a; --warn: #ffad40; --ok: #c9d2ff;
+    --accent-text: #ffad40; --accent-soft: #3a2a12; --bar-rest: #3a4a8f;
     --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25); color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --ink: #eef0f8; --chrome: #0a1442; --bg: #0b1130; --surface: #131b45; --surface-2: #1c2553; --fg: #eef0f8;
-  --muted: #a3abcb; --line: #2a3468; --danger: #ff5a5a; --warn: #ffb347; --ok: #5cc98a;
-  --accent-text: #ffad40; --accent-soft: #3a2a12; --bar-rest: #4a63c4;
+  --muted: #a3abcb; --line: #2a3468; --danger: #ff5a5a; --warn: #ffad40; --ok: #c9d2ff;
+  --accent-text: #ffad40; --accent-soft: #3a2a12; --bar-rest: #3a4a8f;
   --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25); color-scheme: dark;
 }
 
