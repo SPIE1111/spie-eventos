@@ -263,7 +263,7 @@
         const Q = (o) => ({ id: uuid(), event_id: EID, scope: 'sesion', is_open: false, show_results: true, options: [], created_at: now(), ...o });
         const QS = {"1": [["¿Qué tan presente está la seguridad en las decisiones diarias de tu equipo?", "escala", ["1", "2", "3", "4", "5"]], ["En una palabra: ¿qué demuestra que un equipo es seguro?", "nube", []]], "2": [["¿Has vivido o presenciado un incidente que cambió tu forma de trabajar?", "opcion", ["Sí", "No", "Prefiero no responder"]]], "3": [["¿Cuál de los 5 riesgos críticos ves con más frecuencia en tu sitio?", "opcion", ["Electricidad", "Alturas", "Izajes", "Conducción", "LOTO"]], ["¿Cuál crees que se subestima más?", "opcion", ["Electricidad", "Alturas", "Izajes", "Conducción", "LOTO"]]], "5": [["¿Qué afecta más tu concentración en el trabajo? (elige todas las que apliquen)", "multiple", ["Cansancio o falta de sueño", "Presión de tiempo", "Estrés personal o familiar", "Exceso de confianza o rutina", "Carga de trabajo"]]], "6": [["¿Qué debe hacer primero un líder para prevenir accidentes?", "opcion", ["Estar presente en campo", "Escuchar y actuar sobre los reportes", "Dar el ejemplo", "Asignar tiempo y recursos"]]], "8": [["¿Qué tan preparado está tu equipo para usar IA en seguridad?", "escala", ["1", "2", "3", "4", "5"]], ["¿En qué tarea de seguridad aplicarías IA primero?", "abierta", []]], "9": [["En una palabra: ¿qué reconoces de tu equipo este año?", "nube", []]], "10": [["En una palabra: ¿cuál es tu compromiso para volver a casa?", "nube", []]]};
         const qs = [];
-        Object.entries(QS).forEach(([si, list]) => list.forEach(([text, qtype, options], j) => qs.push(Q({ session_id: sessions[+si].id, text, qtype, options, sort: j + 1, is_open: +si === 3 }))));
+        Object.entries(QS).forEach(([si, list]) => list.forEach(([text, qtype, options], j) => qs.push(Q({ session_id: sessions[+si].id, text, qtype, options, sort: j + 1, is_open: true }))));
         const SV = [["Calificación general de la Convención", "escala", ["1", "2", "3", "4", "5"]], ["Calidad de las conferencias", "escala", ["1", "2", "3", "4", "5"]], ["Organización y logística", "escala", ["1", "2", "3", "4", "5"]], ["¿Recomendarías esta Convención a un colega?", "opcion", ["Sí", "Tal vez", "No"]], ["¿Qué tema te gustaría ver en la próxima Convención?", "abierta", []]];
         SV.forEach(([text, qtype, options], j) => qs.push(Q({ scope: 'encuesta', session_id: null, text, qtype, options, is_open: true, sort: j + 1 })));
         write('ev_questions', qs);
@@ -317,6 +317,66 @@
     const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', quality));
     if (!blob) throw new Error('No se pudo procesar la imagen');
     return { blob, width: cw, height: ch };
+  }
+
+  /* =====================================================================
+     Marca de agua: logo SPIE arriba a la derecha + pie con el evento
+     ===================================================================== */
+  let logoImg = null;
+  function loadLogo() {
+    if (logoImg) return logoImg;
+    logoImg = new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = 'img/logo-blanco.png'; });
+    return logoImg;
+  }
+  async function watermark(blob, info = {}) {
+    const src = await createImageBitmap(blob);
+    const w = src.width, h = src.height, u = Math.min(w, h);
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const g = cv.getContext('2d');
+    g.drawImage(src, 0, 0);
+    // velo suave en la esquina superior derecha para que el logo se lea sobre cielos claros
+    const rg = g.createRadialGradient(w, 0, 0, w, 0, u * 0.55);
+    rg.addColorStop(0, 'rgba(15,30,90,.45)'); rg.addColorStop(1, 'rgba(15,30,90,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, w, h);
+    const logo = await loadLogo();
+    const m = Math.round(u * 0.04);
+    if (logo) {
+      const lw = Math.round(Math.max(110, w * 0.2)), lh = Math.round(logo.height * lw / logo.width);
+      g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = Math.round(u * 0.012);
+      g.drawImage(logo, w - lw - m, m, lw, lh);
+      g.shadowColor = 'transparent'; g.shadowBlur = 0;
+    }
+    // pie: degradado azul, nombre del evento, lema y fecha, franja naranja
+    const fh = Math.round(h * 0.17);
+    const lg = g.createLinearGradient(0, h - fh, 0, h);
+    lg.addColorStop(0, 'rgba(15,30,90,0)'); lg.addColorStop(1, 'rgba(15,30,90,.82)');
+    g.fillStyle = lg; g.fillRect(0, h - fh, w, fh);
+    const bar = Math.max(4, Math.round(u * 0.012));
+    g.fillStyle = '#ff9600'; g.fillRect(0, h - bar, w, bar);
+    try { await document.fonts.load(`700 ${Math.round(u * 0.05)}px Jost`); await document.fonts.load(`500 ${Math.round(u * 0.03)}px Jost`); } catch {}
+    const f1 = Math.round(u * 0.048), f2 = Math.round(u * 0.03);
+    g.textBaseline = 'alphabetic'; g.fillStyle = '#ffffff';
+    g.font = `700 ${f1}px Jost, Arial, sans-serif`;
+    g.fillText(info.title || '', m, h - bar - m * 0.7 - f2 * 1.35, w - m * 2);
+    g.font = `500 ${f2}px Jost, Arial, sans-serif`; g.fillStyle = '#ffb347';
+    g.fillText(info.line || '', m, h - bar - m * 0.7, w - m * 2);
+    const out = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.86));
+    if (!out) throw new Error('No se pudo procesar la imagen');
+    return out;
+  }
+
+  /* Conferencia en curso: la que fije el moderador o, si no fijó ninguna, la que marca el horario */
+  function currentSession(event, sessions, at = Date.now()) {
+    if (!sessions || !sessions.length) return null;
+    if (event && event.current_session_id) return sessions.find((s) => s.id === event.current_session_id) || null;
+    return sessions.find((s) => s.starts_at && s.ends_at && new Date(s.starts_at).getTime() <= at && at < new Date(s.ends_at).getTime()) || null;
+  }
+  /* A qué conferencia van las preguntas al ponente: la actual; en recesos, la última que terminó */
+  function askTarget(event, sessions, at = Date.now()) {
+    const cur = currentSession(event, sessions, at);
+    if (cur && cur.kind !== 'pausa') return cur;
+    const talks = sessions.filter((s) => s.kind !== 'pausa' && s.starts_at && new Date(s.starts_at).getTime() <= at);
+    return talks.length ? talks[talks.length - 1] : null;
   }
 
   /* =====================================================================
@@ -465,7 +525,7 @@
      ===================================================================== */
   const EV = {
     C, EID, DEMO, $, $$, esc, uuid, ls, debounce, fmt, toast, errMsg,
-    compressImage, tally, renderResults, starsSVG, qr, appUrl,
+    compressImage, watermark, currentSession, askTarget, tally, renderResults, starsSVG, qr, appUrl,
     db: null,
     init(opts = {}) {
       if (DEMO) { this.db = demoBackend(); this.db.seedIfEmpty(); }
