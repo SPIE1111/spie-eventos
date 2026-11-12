@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-theme="dark">
+<html lang="es" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -8,125 +8,139 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=9">
 <style>
-  /* Pantalla de proyección: siempre oscura, escala con el ancho de la ventana */
-  :root { --bg: #0b1640; --surface: #12205a; --surface-2: #1b2b6b; --fg: #ffffff; --muted: #aab3d8; --line: #2b3b7d; --accent-text: #ffad40; --accent-soft: #3d2c14; --bar-rest: #4a63c4; color-scheme: dark; }
-  body::after { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: .35em; background: var(--accent); z-index: 4; }
+  /* Pantalla del salón. Orden: banda azul (conferencia, hora, logo) · escenario blanco (pregunta y resultados)
+     · columna azul (preguntas al ponente). Colores: azul base, naranja para el dato, rojo solo para "en vivo". */
+  :root { --bg: #eef0f6; --surface: #ffffff; --surface-2: #f3f4f9; --fg: #0f1e5a; --muted: #5a648c; --line: #dfe2ee;
+    --accent-text: #b05a00; --bar-rest: #c5cbe4; --navy: #0f1e5a; --navy-2: #18287a; --orange: #ff9600; --red: #cc0000; color-scheme: light; }
   html, body { height: 100%; overflow: hidden; }
-  body { background: radial-gradient(120% 90% at 100% 0%, #1a2c78 0%, var(--bg) 55%) fixed, var(--bg); color: var(--fg); font-size: clamp(14px, 1.15vw, 26px); }
-  .screen { height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 1.2em; padding: 1.4em max(1.6em, env(safe-area-inset-right, 0px)) 1.4em max(1.6em, env(safe-area-inset-left, 0px)); }
+  body { background: var(--bg); color: var(--fg); font-size: clamp(14px, 1.1vw, 26px); cursor: default; }
+  .screen { height: 100%; display: grid; grid-template-rows: auto 1fr; }
 
-  .top { display: flex; align-items: center; gap: 1.2em; }
-  .top .ev { font: 600 .85em var(--f-display); color: #ffb347; letter-spacing: .14em; text-transform: uppercase; }
-  .top h1 { font-size: 1.9em; font-weight: 700; }
-  .top .who { color: var(--muted); font-size: 1em; margin-top: .2em; }
-  .top .right { margin-left: auto; display: flex; align-items: center; gap: 1em; }
-  .clock { font: 600 1.6em var(--f-mono); font-variant-numeric: tabular-nums; }
-  .stat { text-align: right; }
-  .stat b { font: 800 1.6em var(--f-display); display: block; line-height: 1; font-variant-numeric: tabular-nums; }
-  .stat span { font-size: .75em; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
-  .logo { height: 2.6em; width: auto; border-radius: .2em; }
+  .band { background: var(--navy); color: #fff; display: flex; align-items: center; gap: 2em;
+    padding-block: 1.1em; padding-left: max(2em, env(safe-area-inset-left, 0px)); padding-right: max(2em, env(safe-area-inset-right, 0px));
+    border-bottom: .3em solid var(--orange); }
+  .band .ev { display: flex; align-items: center; gap: .55em; font: 600 .8em var(--f-display); color: #ffb347; letter-spacing: .16em; text-transform: uppercase; }
+  .band h1 { font-size: 1.85em; font-weight: 700; margin-top: .15em; line-height: 1.1; }
+  .band .who { color: rgb(255 255 255 / .72); margin-top: .25em; font-size: 1em; }
+  .band .right { margin-left: auto; display: flex; align-items: center; gap: 1.6em; flex: none; }
+  .clock { font: 500 1.7em var(--f-display); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+  .logo { height: 3.1em; width: auto; display: block; }
+  .dot { width: .6em; height: .6em; border-radius: 50%; background: var(--red); flex: none; }
+  .dot.pulse { animation: pulse 1.6s infinite; }
+  #conn { font-size: .7em; }
+  #conn:empty { display: none; }
 
-  .body { display: grid; grid-template-columns: 1.65fr 1fr; gap: 1.2em; min-height: 0; }
-  .body.solo { grid-template-columns: 1fr; }
-  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 1em; padding: 1.6em; min-height: 0; display: flex; flex-direction: column; gap: 1em; overflow: hidden; position: relative; }
-  .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 1em; }
-  .panel-head .eyebrow { font-size: .8em; }
-  .stage-q { font-size: 2.3em; font-weight: 700; line-height: 1.12; }
-  .stage-res { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
-  .results.big { --bar-h: 1.5em; font-size: 1.25em; }
-  .results.big .bars { gap: 1.1em; }
-  .results.big .bar-label { margin-bottom: .35em; }
-  .results.big .bar-val { font-size: .95em; }
-  .results.big .cols { height: 11em; gap: .8em; }
-  .results.big .col-track { max-width: 4em; }
-  .results.big .avg-num { font-size: 4.4em; }
-  .results.big .stars { font-size: 1.6em; }
-  .results.big .r-count { font-size: .85em; }
-  .results.big .cloud { min-height: 50vh; }
+  .main { min-height: 0; display: grid;
+    padding-block: 1.5em; padding-left: max(2em, env(safe-area-inset-left, 0px)); padding-right: max(2em, env(safe-area-inset-right, 0px)); }
+  .stage { background: var(--surface); border-radius: 1.1em; min-height: 0; overflow: hidden; position: relative;
+    box-shadow: 0 1px 2px rgb(15 30 90 / .06), 0 12px 32px rgb(15 30 90 / .08); animation: viewin .45s ease both; }
+  @keyframes viewin { from { opacity: 0; transform: translateY(10px) } }
+  .lbl { font: 600 .8em var(--f-display); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .tag { display: flex; align-items: center; gap: .7em; }
+
+  /* ---- vista: pregunta en vivo ---- */
+  .vq { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr); }
+  .vq-left { padding: 2.4em 2.6em; display: flex; flex-direction: column; gap: 1.4em; border-right: 1px solid var(--line); }
+  .vq-q { font-size: 2.7em; font-weight: 700; line-height: 1.12; text-wrap: balance; }
+  .vq-count { margin-top: auto; display: flex; align-items: baseline; gap: .4em; }
+  .vq-count b { font: 700 5.2em/1 var(--f-display); color: var(--fg); font-variant-numeric: tabular-nums; display: inline-block; }
+  .vq-count b.pop { animation: pop .5s ease; }
+  .vq-count span { font-size: 1.3em; color: var(--muted); }
+  @keyframes pop { 30% { transform: scale(1.12); color: var(--orange) } }
+  .vq-right { padding: 2.4em 2.6em; display: flex; flex-direction: column; justify-content: center; min-height: 0; }
+  .rotor { display: flex; gap: .45em; }
+  .rotor i { width: .55em; height: .55em; border-radius: 50%; background: var(--line); }
+  .rotor i.on { background: var(--orange); }
+  .results.big { --bar-h: 2.1em; font-size: 1.35em; }
+  .results.big .bars { gap: 1.05em; }
+  .results.big .bar-label { margin-bottom: .3em; font-weight: 600; }
+  .results.big .bar-val { font-size: 1.05em; font-weight: 700; color: var(--fg); }
+  .results.big .bar-row.lead .bar-fill { background: var(--orange); }
+  .results.big .bar-row.flash .bar-track { animation: flash .9s ease; }
+  @keyframes flash { 25% { box-shadow: 0 0 0 .25em rgb(255 150 0 / .35) } }
+  .results.big .cols { height: 13em; gap: 1em; }
+  .results.big .col-track { max-width: 5em; }
+  .results.big .avg-num { font-size: 5em; }
+  .results.big .stars { font-size: 1.9em; }
+  .results.big .r-count { display: none; }
+  .results.big .cloud { min-height: 55vh; }
   .results.big .texts li { font-size: 1.05em; }
   .bar-row.mine .bar-text::after { content: none; }
-  .rotor { display: flex; gap: .4em; }
-  .rotor i { width: .55em; height: .55em; border-radius: 50%; background: var(--line); }
-  .rotor i.on { background: var(--accent); }
 
-  /* preguntas al ponente */
-  .sqs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .7em; overflow: hidden; }
-  .sqs li { display: grid; grid-template-columns: 3.2em 1fr; gap: .9em; align-items: start; background: var(--surface-2); border-radius: .8em; padding: .9em 1em; animation: slidein .5s ease both; }
-  .sqs .v { text-align: center; font: 800 1.5em var(--f-display); line-height: 1; color: var(--accent); }
-  .sqs .v small { display: block; font: 600 .45em var(--f-body); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-top: .3em; }
-  .sqs p { font-size: 1.08em; line-height: 1.35; }
-  #sqCount:empty { display: none; }
-  .sqs .v.t { font-size: 1.05em; color: var(--accent-text); }
-  .sqs li.done { opacity: .6; }
-  .sqs .by { color: var(--muted); font-size: .8em; margin-top: .3em; }
-  .sqs li.top1 { background: var(--surface-2); box-shadow: inset .3em 0 0 var(--accent); }
-  .solo .sqs { display: grid; grid-template-columns: 1fr 1fr; }
-  .solo .sqs p { font-size: 1.35em; }
-  @keyframes slidein { from { opacity: 0; transform: translateY(10px) } }
+  /* ---- vista: preguntas al ponente ---- */
+  .vp { height: 100%; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+  .vp-main { padding: 2.4em 2.8em; display: flex; flex-direction: column; gap: 1.2em; min-height: 0; }
+  .vp-feat { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 1em; }
+  .vp-feat p { font-size: 3em; font-weight: 600; line-height: 1.18; text-wrap: balance; }
+  .vp-feat .by { font-size: 1.25em; display: flex; gap: .6em; align-items: center; color: var(--muted); }
+  .vp-feat .by b { color: var(--accent-text); font-weight: 600; }
+  .vp-feat.new { animation: featin .7s ease both; }
+  @keyframes featin { from { opacity: 0; transform: translateY(16px) } }
+  .vp-side { background: var(--navy); color: #fff; padding: 2.2em 2em; display: flex; flex-direction: column; gap: 1em; min-height: 0; }
+  .vp-side .lbl { color: #ffb347; display: flex; justify-content: space-between; }
+  .vp-side .lbl b { color: #fff; font-weight: 700; letter-spacing: .04em; }
+  .sqs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .sqs li { padding: .95em 0; border-top: 1px solid rgb(255 255 255 / .12); }
+  .sqs li:first-child { border-top: 0; padding-top: .2em; }
+  .sqs li.new { animation: slidein .6s ease both, glow 2.2s ease; }
+  .sqs p { font-size: 1.12em; line-height: 1.35; }
+  .sqs .by { display: flex; gap: .5em; align-items: center; margin-top: .35em; font-size: .8em; color: rgb(255 255 255 / .62); }
+  .sqs .by b { color: #ffb347; font-weight: 600; }
+  .sqs li.done { opacity: .45; }
+  .sqs .empty-q { color: rgb(255 255 255 / .6); }
+  @keyframes slidein { from { opacity: 0; transform: translateX(14px) } }
+  @keyframes glow { 0%, 40% { background: rgb(255 150 0 / .18) } 100% { background: transparent } }
+  .vp-empty { flex: 1; display: grid; place-items: center; color: var(--muted); font-size: 1.4em; }
 
-  .qr-card { display: flex; gap: 1em; align-items: center; background: #fff; color: #0f1e5a; border-left: .35em solid var(--accent); border-radius: .9em; padding: .9em; margin-top: auto; }
-  .qr-card .qr { width: 7em; height: 7em; flex: none; }
-  .qr-card .qr img, .qr-card .qr canvas { width: 100% !important; height: 100% !important; }
-  .qr-card b { font: 800 1.3em var(--f-display); display: block; }
-  .qr-card span { font: 500 .8em var(--f-body); color: #56608a; word-break: break-all; }
+  /* ---- vista: espera ---- */
+  .idle { height: 100%; display: grid; place-items: center; text-align: center; padding: 2em; }
+  .idle .wrap { display: flex; flex-direction: column; align-items: center; gap: 1.3em; }
+  .idle img { height: 7em; width: auto; }
+  .idle h2 { font-size: 3em; font-weight: 700; max-width: 22ch; text-wrap: balance; }
+  .idle p { color: var(--muted); font-size: 1.2em; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; }
 
   /* galería */
-  .slide { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr; opacity: 0; transition: opacity 1s ease; }
+  .stage.gal { padding: 0; background: var(--navy); }
+  .slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1s ease; }
   .slide.on { opacity: 1; }
-  .slide .bgimg { position: absolute; inset: 0; background-size: cover; background-position: center; filter: blur(40px) brightness(.45); transform: scale(1.2); }
-  .slide img { position: relative; max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
-  .slide .cap { position: absolute; left: 1.2em; bottom: 1.2em; right: 1.2em; background: rgb(8 17 26 / .72); backdrop-filter: blur(6px); border-radius: .7em; padding: .7em 1em; }
-  .slide .cap b { font-family: var(--f-display); font-size: 1.15em; }
-  .gal { padding: 0; }
-  .mosaic { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: .4em; flex: 1; min-height: 0; }
-  .mosaic div { background-size: cover; background-position: center; border-radius: .5em; animation: slidein .6s ease both; }
+  .slide .bgimg { position: absolute; inset: 0; background-size: cover; background-position: center; filter: blur(40px) brightness(.4); transform: scale(1.2); }
+  .slide img { position: relative; width: 100%; height: 100%; object-fit: contain; }
+  .slide .cap { position: absolute; left: 1.2em; bottom: 1.2em; background: rgb(15 30 90 / .82); color: #fff; border-radius: .6em; padding: .55em .9em; font-size: .95em; }
+  .slide .cap b { color: #ffb347; }
 
-  .idle { flex: 1; display: grid; place-items: center; text-align: center; color: var(--muted); }
-  .idle h2 { color: var(--fg); font-size: 2.4em; font-weight: 800;  margin-bottom: .3em; }
-
-  .fsbtn { position: fixed; right: max(1em, env(safe-area-inset-right, 0px)); bottom: max(1em, env(safe-area-inset-bottom, 0px)); z-index: 5; opacity: .0; transition: opacity .3s; }
-  body:hover .fsbtn { opacity: .85; }
   @media (max-width: 760px) {
     html, body { overflow: auto; height: auto; }
-    .body { grid-template-columns: 1fr; }
-    .solo .sqs { grid-template-columns: 1fr; }
-    body { font-size: 14px; }
+    .vq, .vp { grid-template-columns: 1fr; }
+    .vq-left { border-right: 0; border-bottom: 1px solid var(--line); }
+    body { font-size: 12px; }
   }
 </style>
 </head>
 <body>
 <div class="screen">
-  <div class="top">
-    <div class="grow">
-      <div class="ev" id="evName"></div>
+  <header class="band">
+    <div style="min-width:0">
+      <div class="ev"><span class="dot pulse" id="liveDot"></span><span id="evName"></span></div>
       <h1 id="sTitle">Cargando…</h1>
       <div class="who" id="sWho"></div>
     </div>
     <div class="right">
-      <div class="stat"><b id="nPeople">0</b><span>participantes</span></div>
-      <span class="pill" id="conn">Conectando</span>
+      <span class="pill" id="conn"></span>
       <div class="clock" id="clock"></div>
-      <img class="logo" id="logo" src="img/logo-navy.png?v=7" alt="SPIE">
+      <img class="logo" data-logo="navy" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="SPIE">
     </div>
-  </div>
-  <div class="body" id="body">
-    <section class="panel" id="stage"></section>
-    <aside class="panel" id="side">
-      <div class="panel-head"><span class="eyebrow">Preguntas al ponente</span><span class="pill" id="sqCount"></span></div>
-      <ul class="sqs" id="sqs"></ul>
-      <div class="qr-card"><div class="qr" id="qr"></div><div><b>Escanea y participa</b><span id="qrUrl"></span></div></div>
-    </aside>
+  </header>
+  <div class="main" id="body">
+    <section class="stage" id="stage"></section>
   </div>
 </div>
-<button class="btn soft sm fsbtn" id="fs" type="button">Pantalla completa</button>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="config.js?v=7"></script>
-<script src="icons.js?v=7"></script>
-<script src="common.js?v=7"></script>
+<script src="config.js?v=9"></script>
+<script src="icons.js?v=9"></script>
+<script src="common.js?v=9"></script>
 <script>
 (function () {
   'use strict';
@@ -134,13 +148,10 @@
   const db = EV.init({ storageKey: 'ev-screen-' + EID });
   const S = { event: null, sessions: [], questions: [], answers: [], sq: [], photos: [], people: 0, rot: 0, slide: 0 };
 
-  EV.onStatus((s) => { const c = $('#conn'); c.className = 'pill ' + (s === 'live' ? 'live' : ''); c.textContent = s === 'live' ? 'En vivo' : s === 'demo' ? 'Demo' : 'Reconectando'; });
+  EV.onStatus((s) => { const c = $('#conn'); c.textContent = s === 'live' ? '' : s === 'demo' ? 'Demo' : 'Reconectando…'; });
   const tick = () => { $('#clock').textContent = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); };
   tick(); setInterval(tick, 10000);
 
-  const url = EV.appUrl();
-  EV.qr($('#qr'), url, 256);
-  $('#qrUrl').textContent = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
   const cur = () => EV.currentSession(S.event, S.sessions);
   const askCur = () => EV.askTarget(S.event, S.sessions);
@@ -167,13 +178,13 @@
     const t = Array.from(pend); pend.clear();
     try { for (const n of t) await L[n](); if (t.includes('ev_event') || t.includes('ev_questions')) await L.ev_answers(); } catch (e) { console.warn(e); }
     render();
-  }, 300);
+  }, 120);
   db.subscribe(['ev_event', 'ev_sessions', 'ev_questions', 'ev_answers', 'ev_speaker_q', 'ev_photos', 'ev_participants'], (t, p) => {
     if (t === 'ev_answers' && p && p.new && p.new.id) {
       if (!qIds().includes(p.new.question_id)) return;
       const i = S.answers.findIndex((a) => a.id === p.new.id || (a.question_id === p.new.question_id && a.participant_id === p.new.participant_id));
       if (i >= 0) S.answers[i] = p.new; else S.answers.push(p.new);
-      updateStageResults(); return;
+      if (mode() === 'pregunta') updateStageResults(); return;
     }
     if (L[t]) { pend.add(t); flush(); }
   });
@@ -186,18 +197,20 @@
     lastCur = id; try { await L.ev_answers(); } catch {} render();
   }, 20000);
 
-  /* -------- modo de pantalla -------- */
+  /* -------- qué se proyecta: una sola vista a la vez, la elige el moderador --------
+     pregunta · ponente · galeria · espera   ("auto" de versiones anteriores = espera) */
   function mode() {
     const h = location.hash.replace('#', '');
-    if (['auto', 'pregunta', 'ponente', 'galeria'].includes(h)) return h;
-    return (S.event && S.event.screen_mode) || 'auto';
+    if (['pregunta', 'ponente', 'galeria', 'espera'].includes(h)) return h;
+    const m = (S.event && S.event.screen_mode) || 'espera';
+    return ['pregunta', 'ponente', 'galeria'].includes(m) ? m : 'espera';
   }
   window.addEventListener('hashchange', render);
 
   function stageQuestions() {
-    const c = cur(); if (!c) return [];
     const pinned = S.event && S.event.screen_question_id && S.questions.find((q) => q.id === S.event.screen_question_id);
     if (pinned) return [pinned];
+    const c = cur(); if (!c) return [];
     return S.questions.filter((q) => q.scope === 'sesion' && q.session_id === c.id && q.is_open);
   }
 
@@ -205,94 +218,127 @@
     const e = S.event || {}; const c = cur();
     document.title = (e.name || 'Evento') + ' · Pantalla';
     $('#evName').textContent = e.name || '';
-    $('#sTitle').textContent = c ? c.title : (e.name || 'Bienvenidos');
+    $('#sTitle').textContent = c ? c.title : (e.name || '');
     $('#sWho').textContent = c ? EV.fmt.sessLine(c) : (e.subtitle || '');
-    $('#nPeople').textContent = S.people;
+    $('#liveDot').hidden = !c;
     const m = mode();
-    const body = $('#body');
-    body.classList.toggle('solo', m !== 'auto');
-    $('#side').hidden = m !== 'auto';
-    renderSide(); renderStage(m);
+    if (m === 'pregunta') return viewQuestion();
+    if (m === 'ponente') return viewSpeaker();
+    if (m === 'galeria') return viewGallery();
+    return viewIdle();
   }
 
-  function sqList(limit) {
-    const c = askCur();
-    return S.sq.filter((q) => c && q.session_id === c.id && (q.status === 'approved' || q.status === 'answered'))
-      .sort((a, b) => (b.created_at > a.created_at ? 1 : -1)).slice(0, limit);
-  }
-  function sqHTML(list) {
-    return list.map((q, i) => `<li class="${i === 0 ? 'top1' : ''} ${q.status === 'answered' ? 'done' : ''}"><div class="v t">${EV.fmt.time(q.created_at)}${q.status === 'answered' ? '<small>respondida</small>' : ''}</div>
-      <div><p>${esc(q.text)}</p><div class="by">${q.anonymous ? 'Anónimo' : esc(q.participant_name || '')}</div></div></li>`).join('');
-  }
-  function renderSide() {
-    const list = sqList(5);
-    const sig = list.map((q) => q.id + ':' + q.status).join();
-    const ul = $('#sqs');
-    if (ul.dataset.sig !== sig) { ul.dataset.sig = sig; ul.innerHTML = list.length ? sqHTML(list) : '<li style="grid-template-columns:1fr" class="muted">Aún no hay preguntas.</li>'; }
-    const n = sqList(999).length; $('#sqCount').textContent = n ? `${n}` : '';
+  // monta una vista solo si cambió su "llave"; si no, deja el DOM y actualiza en sitio
+  let viewKey = '';
+  function mount(key, html) {
+    if (key === viewKey) return false;
+    viewKey = key;
+    const st = $('#stage'); st.className = 'stage'; st.style.animation = 'none'; void st.offsetWidth; st.style.animation = '';
+    st.innerHTML = html; return true;
   }
 
-  let stageKey = '';
-  function renderStage(m) {
-    const st = $('#stage');
-    if (m === 'ponente') {
-      const list = sqList(8); const key = 'ponente:' + list.map((q) => q.id + q.status).join();
-      if (key === stageKey) return; stageKey = key; st.className = 'panel';
-      st.innerHTML = `<div class="panel-head"><span class="eyebrow">Preguntas al ponente</span><div class="qr-card" style="margin:0;padding:.5em"><div class="qr" id="qr2" style="width:4.5em;height:4.5em"></div><div><b style="font-size:1em">Envía la tuya</b></div></div></div>
-        <ul class="sqs">${list.length ? sqHTML(list) : '<li style="grid-template-columns:1fr" class="muted">Aún no hay preguntas.</li>'}</ul>`;
-      EV.qr($('#qr2'), url, 160); return;
-    }
-    if (m === 'galeria' || (m === 'auto' && !stageQuestions().length && S.photos.length)) { renderGallery(st, m === 'galeria'); return; }
+  // número que cuenta hasta su nuevo valor
+  function countTo(el, to) {
+    const from = +el.dataset.v || 0; el.dataset.v = to;
+    if (from === to) { el.textContent = to; return; }
+    if (to > from) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+    const t0 = performance.now(), d = 600;
+    const step = (t) => { const k = Math.min(1, (t - t0) / d); el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
+
+  /* -------- vista: pregunta en vivo -------- */
+  function viewQuestion() {
     const qs = stageQuestions();
-    if (!qs.length) {
-      const key = 'idle:' + (cur() || {}).id; if (key === stageKey) return; stageKey = key; st.className = 'panel';
-      st.innerHTML = `<div class="idle"><div style="display:flex;flex-direction:column;align-items:center;gap:1em"><h2>${esc(cur() ? cur().title : 'Bienvenidos')}</h2><p>Escanea y participa</p><div class="qr-card" style="margin:0"><div class="qr" id="qr3" style="width:11em;height:11em"></div></div></div></div>`;
-      EV.qr($('#qr3'), url, 320); return;
-    }
-    const q = qs[S.rot % qs.length];
-    const key = 'q:' + q.id + ':' + q.is_open + ':' + qs.length + ':' + (S.rot % qs.length);
-    if (key !== stageKey) {
-      stageKey = key; st.className = 'panel';
-      st.innerHTML = `<div class="panel-head"><span class="eyebrow">Pregunta en vivo</span><div class="row">${qs.length > 1 ? `<div class="rotor">${qs.map((_, i) => `<i class="${i === S.rot % qs.length ? 'on' : ''}"></i>`).join('')}</div>` : ''}<span class="pill ${q.is_open ? 'live' : ''}">${q.is_open ? 'Votación abierta' : 'Cerrada'}</span></div></div>
-        <h2 class="stage-q">${esc(q.text)}</h2><div class="stage-res"><div id="stageRes"></div></div>`;
-    }
+    if (!qs.length) return viewIdle();
+    const i = S.rot % qs.length, q = qs[i];
+    mount('q:' + q.id + ':' + q.is_open + ':' + qs.length + ':' + i, `<div class="vq">
+      <div class="vq-left">
+        <div class="tag"><span class="dot ${q.is_open ? 'pulse' : ''}" ${q.is_open ? '' : 'style="background:var(--muted)"'}></span><span class="lbl">${q.is_open ? 'Pregunta en vivo' : 'Votación cerrada'}</span>
+          ${qs.length > 1 ? `<div class="rotor" style="margin-left:auto">${qs.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>` : ''}</div>
+        <h2 class="vq-q">${esc(q.text)}</h2>
+        <div class="vq-count"><b id="qN" data-v="0">0</b><span id="qNl">respuestas</span></div>
+      </div>
+      <div class="vq-right"><div id="stageRes"></div></div></div>`);
     updateStageResults();
   }
+  let lastCounts = {};
   function updateStageResults() {
     const host = $('#stageRes'); if (!host) return;
     const qs = stageQuestions(); if (!qs.length) return;
     const q = qs[S.rot % qs.length];
-    if (q.qtype === 'abierta') EV.renderResults(host, q, S.answers, { big: true, limit: 8 });
-    else EV.renderResults(host, q, S.answers, { big: true });
-  }
-  // rotar preguntas abiertas cada 15 s
-  setInterval(() => { if (stageQuestions().length > 1 && mode() !== 'galeria' && mode() !== 'ponente') { S.rot++; render(); } }, 15000);
-
-  /* -------- galería -------- */
-  function renderGallery(st, full) {
-    const ph = S.photos;
-    if (!ph.length) {
-      if (stageKey === 'gal-empty') return; stageKey = 'gal-empty'; st.className = 'panel';
-      st.innerHTML = `<div class="idle"><div><h2>Comparte tus fotos</h2></div></div>`; return;
+    const n = new Set(S.answers.filter((a) => a.question_id === q.id).map((a) => a.participant_id)).size;
+    countTo($('#qN'), n); $('#qNl').textContent = n === 1 ? 'respuesta' : 'respuestas';
+    const r = EV.renderResults(host, q, S.answers, { big: true, limit: 8 });
+    // destello en la opción que acaba de recibir un voto
+    if (r && r.counts) {
+      const prev = lastCounts[q.id] || [];
+      $$('.bar-row', host).forEach((row, k) => { if (prev.length && (r.counts[k] || 0) > (prev[k] || 0)) { row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); } });
+      lastCounts[q.id] = r.counts.slice();
     }
-    const key = 'gal:' + ph.slice(0, 12).map((p) => p.id).join();
-    if (key === stageKey) return; stageKey = key;
-    st.className = 'panel gal';
-    st.innerHTML = ph.slice(0, 12).map((p, i) => `<div class="slide ${i === 0 ? 'on' : ''}">
+  }
+  // varias preguntas abiertas: rotan cada 15 s
+  setInterval(() => { if (mode() === 'pregunta' && stageQuestions().length > 1) { S.rot++; render(); } }, 15000);
+
+  /* -------- vista: preguntas al ponente -------- */
+  const seenSq = new Set(); let firstSq = true;
+  function viewSpeaker() {
+    const c = askCur();
+    const all = S.sq.filter((q) => c && q.session_id === c.id && (q.status === 'approved' || q.status === 'answered'))
+      .sort((a, b) => (b.created_at > a.created_at ? 1 : -1));
+    const open = all.filter((q) => q.status !== 'answered');
+    const feat = open[0] || null;
+    const rest = all.filter((q) => q !== feat).slice(0, 7);
+    const sig = 'p:' + (c ? c.id : '') + ':' + all.map((q) => q.id + q.status).join();
+    if (sig === viewKey) return;
+    const isNew = (q) => !firstSq && !seenSq.has(q.id);
+    const html = `<div class="vp">
+      <div class="vp-main">
+        <div class="tag"><span class="dot pulse"></span><span class="lbl">Preguntas al ponente</span></div>
+        ${feat ? `<div class="vp-feat ${isNew(feat) || viewKey.startsWith('p:') && !viewKey.includes(feat.id) ? 'new' : ''}"><p>${esc(feat.text)}</p>
+          <div class="by"><b>${feat.anonymous ? 'Anónimo' : esc(feat.participant_name || '')}</b><span>${EV.fmt.time(feat.created_at)}</span></div></div>`
+        : `<div class="vp-empty">Aún no hay preguntas.</div>`}
+      </div>
+      <aside class="vp-side"><div class="lbl"><span>Más preguntas</span><b>${all.length}</b></div>
+        <ul class="sqs">${rest.length ? rest.map((q) => `<li class="${q.status === 'answered' ? 'done' : ''} ${isNew(q) ? 'new' : ''}"><p>${esc(q.text)}</p>
+          <div class="by"><b>${q.anonymous ? 'Anónimo' : esc(q.participant_name || '')}</b><span>${EV.fmt.time(q.created_at)}</span>${q.status === 'answered' ? '<span>· Respondida</span>' : ''}</div></li>`).join('') : '<li class="empty-q">—</li>'}</ul>
+      </aside></div>`;
+    const wasSpeaker = viewKey.startsWith('p:');
+    viewKey = sig;
+    const st = $('#stage'); st.className = 'stage';
+    if (!wasSpeaker) { st.style.animation = 'none'; void st.offsetWidth; st.style.animation = ''; }
+    st.innerHTML = html;
+    all.forEach((q) => seenSq.add(q.id)); firstSq = false;
+  }
+
+  /* -------- vista: espera -------- */
+  function viewIdle() {
+    const e = S.event || {};
+    mount('idle:' + (e.name || '') + (e.subtitle || ''), `<div class="idle"><div class="wrap"><img alt="SPIE" src="${EV.BRAND.navy}"><h2>${esc(e.name || '')}</h2>${e.subtitle ? `<p>${esc(e.subtitle)}</p>` : ''}</div></div>`);
+  }
+
+  /* -------- vista: galería -------- */
+  function viewGallery() {
+    const ph = S.photos;
+    if (!ph.length) return viewIdle();
+    if (mount('gal:' + ph.slice(0, 12).map((p) => p.id).join(), ph.slice(0, 12).map((p, i) => `<div class="slide ${i === 0 ? 'on' : ''}">
       <div class="bgimg" style="background-image:url('${esc(p.url)}')"></div><img src="${esc(p.url)}" alt="">
-      <div class="cap"><b>${esc(p.participant_name || '')}</b>${p.caption ? ` · ${esc(p.caption)}` : ''} <span class="muted small">${fmt.rel(p.created_at)}</span></div></div>`).join('');
-    S.slide = 0;
+      <div class="cap"><b>${esc(p.participant_name || '')}</b>${p.caption ? ` · ${esc(p.caption)}` : ''}</div></div>`).join(''))) {
+      $('#stage').classList.add('gal'); S.slide = 0;
+    }
   }
   setInterval(() => {
     const sl = $$('#stage .slide'); if (sl.length < 2) return;
     sl[S.slide % sl.length].classList.remove('on'); S.slide++; sl[S.slide % sl.length].classList.add('on');
   }, 6000);
 
-  $('#fs').addEventListener('click', () => { const d = document.documentElement; (d.requestFullscreen ? d.requestFullscreen() : Promise.reject()).catch(() => {}); });
+  // pantalla completa sin botón visible: doble clic o tecla F
+  const goFull = () => { const d = document.documentElement; if (!document.fullscreenElement && d.requestFullscreen) d.requestFullscreen().catch(() => {}); };
+  document.addEventListener('dblclick', goFull);
   document.addEventListener('keydown', (e) => {
-    const map = { '1': 'auto', '2': 'pregunta', '3': 'ponente', '4': 'galeria' };
+    const map = { '1': 'pregunta', '2': 'ponente', '3': 'galeria', '4': 'espera' };
     if (map[e.key]) location.hash = map[e.key];
-    if (e.key === 'f') $('#fs').click();
+    if (e.key === 'f' || e.key === 'F') goFull();
     if (e.key === 'ArrowRight') { S.rot++; render(); }
   });
 
