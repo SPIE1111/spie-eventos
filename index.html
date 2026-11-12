@@ -1,302 +1,1004 @@
 <!doctype html>
-<html lang="es" data-theme="dark">
+<html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pantalla del evento</title>
+<meta name="theme-color" content="#0f1e5a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Evento en vivo</title>
+<link rel="manifest" href="manifest.json?v=7">
 <link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=7">
 <style>
-  /* Pantalla de proyección: siempre oscura, escala con el ancho de la ventana */
-  :root { --bg: #0b1640; --surface: #12205a; --surface-2: #1b2b6b; --fg: #ffffff; --muted: #aab3d8; --line: #2b3b7d; --accent-text: #ffad40; --accent-soft: #3d2c14; --bar-rest: #4a63c4; color-scheme: dark; }
-  body::after { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: .35em; background: var(--accent); z-index: 4; }
-  html, body { height: 100%; overflow: hidden; }
-  body { background: radial-gradient(120% 90% at 100% 0%, #1a2c78 0%, var(--bg) 55%) fixed, var(--bg); color: var(--fg); font-size: clamp(14px, 1.15vw, 26px); }
-  .screen { height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 1.2em; padding: 1.4em max(1.6em, env(safe-area-inset-right, 0px)) 1.4em max(1.6em, env(safe-area-inset-left, 0px)); }
+  body { min-height: 100dvh; }
+  .wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
-  .top { display: flex; align-items: center; gap: 1.2em; }
-  .top .ev { font: 600 .85em var(--f-display); color: #ffb347; letter-spacing: .14em; text-transform: uppercase; }
-  .top h1 { font-size: 1.9em; font-weight: 700; }
-  .top .who { color: var(--muted); font-size: 1em; margin-top: .2em; }
-  .top .right { margin-left: auto; display: flex; align-items: center; gap: 1em; }
-  .clock { font: 600 1.6em var(--f-mono); font-variant-numeric: tabular-nums; }
-  .stat { text-align: right; }
-  .stat b { font: 800 1.6em var(--f-display); display: block; line-height: 1; font-variant-numeric: tabular-nums; }
-  .stat span { font-size: .75em; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
-  .logo { height: 2.6em; width: auto; border-radius: .2em; }
-
-  .body { display: grid; grid-template-columns: 1.65fr 1fr; gap: 1.2em; min-height: 0; }
-  .body.solo { grid-template-columns: 1fr; }
-  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 1em; padding: 1.6em; min-height: 0; display: flex; flex-direction: column; gap: 1em; overflow: hidden; position: relative; }
-  .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 1em; }
-  .panel-head .eyebrow { font-size: .8em; }
-  .stage-q { font-size: 2.3em; font-weight: 700; line-height: 1.12; }
-  .stage-res { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
-  .results.big { --bar-h: 1.5em; font-size: 1.25em; }
-  .results.big .bars { gap: 1.1em; }
-  .results.big .bar-label { margin-bottom: .35em; }
-  .results.big .bar-val { font-size: .95em; }
-  .results.big .cols { height: 11em; gap: .8em; }
-  .results.big .col-track { max-width: 4em; }
-  .results.big .avg-num { font-size: 4.4em; }
-  .results.big .stars { font-size: 1.6em; }
-  .results.big .r-count { font-size: .85em; }
-  .results.big .cloud { min-height: 50vh; }
-  .results.big .texts li { font-size: 1.05em; }
-  .bar-row.mine .bar-text::after { content: none; }
-  .rotor { display: flex; gap: .4em; }
-  .rotor i { width: .55em; height: .55em; border-radius: 50%; background: var(--line); }
-  .rotor i.on { background: var(--accent); }
-
-  /* preguntas al ponente */
-  .sqs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .7em; overflow: hidden; }
-  .sqs li { display: grid; grid-template-columns: 3.2em 1fr; gap: .9em; align-items: start; background: var(--surface-2); border-radius: .8em; padding: .9em 1em; animation: slidein .5s ease both; }
-  .sqs .v { text-align: center; font: 800 1.5em var(--f-display); line-height: 1; color: var(--accent); }
-  .sqs .v small { display: block; font: 600 .45em var(--f-body); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-top: .3em; }
-  .sqs p { font-size: 1.08em; line-height: 1.35; }
-  #sqCount:empty { display: none; }
-  .sqs .v.t { font-size: 1.05em; color: var(--accent-text); }
-  .sqs li.done { opacity: .6; }
-  .sqs .by { color: var(--muted); font-size: .8em; margin-top: .3em; }
-  .sqs li.top1 { background: var(--surface-2); box-shadow: inset .3em 0 0 var(--accent); }
-  .solo .sqs { display: grid; grid-template-columns: 1fr 1fr; }
-  .solo .sqs p { font-size: 1.35em; }
-  @keyframes slidein { from { opacity: 0; transform: translateY(10px) } }
-
-  .qr-card { display: flex; gap: 1em; align-items: center; background: #fff; color: #0f1e5a; border-left: .35em solid var(--accent); border-radius: .9em; padding: .9em; margin-top: auto; }
-  .qr-card .qr { width: 7em; height: 7em; flex: none; }
-  .qr-card .qr img, .qr-card .qr canvas { width: 100% !important; height: 100% !important; }
-  .qr-card b { font: 800 1.3em var(--f-display); display: block; }
-  .qr-card span { font: 500 .8em var(--f-body); color: #56608a; word-break: break-all; }
-
-  /* galería */
-  .slide { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr; opacity: 0; transition: opacity 1s ease; }
-  .slide.on { opacity: 1; }
-  .slide .bgimg { position: absolute; inset: 0; background-size: cover; background-position: center; filter: blur(40px) brightness(.45); transform: scale(1.2); }
-  .slide img { position: relative; max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
-  .slide .cap { position: absolute; left: 1.2em; bottom: 1.2em; right: 1.2em; background: rgb(8 17 26 / .72); backdrop-filter: blur(6px); border-radius: .7em; padding: .7em 1em; }
-  .slide .cap b { font-family: var(--f-display); font-size: 1.15em; }
-  .gal { padding: 0; }
-  .mosaic { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: .4em; flex: 1; min-height: 0; }
-  .mosaic div { background-size: cover; background-position: center; border-radius: .5em; animation: slidein .6s ease both; }
-
-  .idle { flex: 1; display: grid; place-items: center; text-align: center; color: var(--muted); }
-  .idle h2 { color: var(--fg); font-size: 2.4em; font-weight: 800;  margin-bottom: .3em; }
-
-  .fsbtn { position: fixed; right: max(1em, env(safe-area-inset-right, 0px)); bottom: max(1em, env(safe-area-inset-bottom, 0px)); z-index: 5; opacity: .0; transition: opacity .3s; }
-  body:hover .fsbtn { opacity: .85; }
-  @media (max-width: 760px) {
-    html, body { overflow: auto; height: auto; }
-    .body { grid-template-columns: 1fr; }
-    .solo .sqs { grid-template-columns: 1fr; }
-    body { font-size: 14px; }
+  /* ---------- Entrada con nombre ---------- */
+  #gate { min-height: 100dvh; display: grid; place-items: center; background: var(--chrome); color: #fff; padding-block: 28px; }
+  .badge {
+    width: min(100%, 410px); background: #fff; color: #0f1e5a; border-radius: 22px; overflow: hidden;
+    box-shadow: 0 30px 60px rgb(0 0 0 / .35); position: relative;
   }
+  .badge-top { position: relative; color: #fff; padding: 18px 22px 26px; min-height: 250px; display: flex; flex-direction: column; justify-content: space-between;
+    background: linear-gradient(180deg, rgb(15 30 90 / .55) 0%, rgb(15 30 90 / .15) 35%, rgb(15 30 90 / .92) 100%), url(img/hero.jpg?v=7) 38% 22% / cover, #0f1e5a; }
+  .badge-brand { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .badge-brand .sub { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .9; }
+  .badge-brand img { height: 34px; width: auto; border-radius: 4px; }
+  .badge-top .eyebrow { color: #ffb347; letter-spacing: .08em; }
+  .badge-top h1 { font-size: 31px; font-weight: 700; margin-top: 4px; line-height: 1.08; }
+  .badge-top p { margin-top: 6px; opacity: .92; }
+  .badge-orange { height: 6px; background: var(--accent); }
+  .badge-body { padding: 22px 22px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .badge-body label span { color: #56608a; }
+  .badge-body input { background: #f4f5f9; color: #0f1e5a; border-color: #d8dbe8; font-size: 18px; }
+  .badge-body .muted { color: #56608a; font-size: 13.5px; }
+  .badge-body .btn { background: #ff9600; color: #0f1e5a; font-weight: 700; }
+  .badge-strip { padding: 12px 22px; border-top: 1px dashed #d8dbe8; font: 600 11px var(--f-body); color: #56608a; letter-spacing: .08em; text-transform: uppercase; }
+  .badge-strip:empty, .badge-strip:has(span:empty) { display: none; }
+  .gate-err { margin: -6px 0 0; color: var(--danger); font-weight: 600; font-size: 14px; }
+  .badge-body input.bad { border-color: #cc0000; box-shadow: 0 0 0 3px rgb(204 0 0 / .12); }
+  .gate-go { display: flex; justify-content: space-between; padding-inline: 22px; font-size: 17px; }
+  .gate-go .arr { font-size: 20px; line-height: 1; transition: transform .2s; }
+  .gate-go:hover .arr { transform: translateX(4px); }
+  .badge-strip b { color: #0f1e5a; }
+
+  /* ---------- Encabezado ---------- */
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--chrome); }
+  header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--chrome); color: #fff; }
+  header.top .wrap { display: flex; align-items: center; gap: 12px; padding-block: 12px; }
+  header.top h2 { font-size: 16px; font-weight: 700;  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  header.top .sub { font-size: 12px; color: rgb(255 255 255 / .7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .who { border: 1px solid rgb(255 255 255 / .25); background: transparent; color: #fff; border-radius: 999px; padding: 6px 12px 6px 8px; display: flex; align-items: center; gap: 6px; font: 600 13px var(--f-body); cursor: pointer; max-width: 46%; }
+  .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who .ic { width: 18px; height: 18px; flex: none; }
+  .conn { font-size: 11px; padding: 2px 8px; }
+  header.top .pill { background: rgb(255 255 255 / .12); color: #fff; }
+  header.top .pill.live { background: rgb(255 90 80 / .22); color: #ffb4ae; }
+
+  main { padding-bottom: calc(var(--nav-h) + 28px + env(safe-area-inset-bottom, 0px)); }
+  .view { padding-top: 18px; display: flex; flex-direction: column; gap: 16px; }
+  .view-title { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
+  .view-title h1 { font-size: 26px; font-weight: 800; }
+
+  /* ---------- Navegación inferior ---------- */
+  nav.tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+    padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+  }
+  nav.tabs .in { max-width: 640px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
+  nav.tabs button {
+    border: 0; background: transparent; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font: 600 11px var(--f-body); padding: 6px 2px; cursor: pointer; border-radius: 10px; position: relative; min-height: 50px;
+  }
+  nav.tabs button .ic { width: 24px; height: 24px; }
+  nav.tabs button[aria-current="page"] { color: var(--accent-text); }
+  nav.tabs button[aria-current="page"]::before { content: ""; position: absolute; top: -6px; width: 26px; height: 3px; border-radius: 3px; background: var(--accent); }
+  nav.tabs .dot { position: absolute; top: 5px; right: calc(50% - 18px); width: 8px; height: 8px; border-radius: 50%; background: var(--danger); border: 2px solid var(--surface); }
+
+  /* ---------- Inicio ---------- */
+  .hero { color: #fff; border-radius: 18px; padding: 18px 20px 20px; position: relative; overflow: hidden;
+    background: linear-gradient(180deg, rgb(15 30 90 / .45) 0%, rgb(15 30 90 / .2) 30%, rgb(15 30 90 / .95) 78%), url(img/hero.jpg?v=7) 38% 22% / cover, #0f1e5a; }
+  .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--accent); }
+  .hero-brand { display: flex; justify-content: flex-end; margin-bottom: 64px; }
+  .hero-brand img { height: 30px; width: auto; border-radius: 4px; }
+  .hero .eyebrow { color: #ffb347; }
+  .hero h1 { font-size: 28px; font-weight: 700; margin-top: 6px; position: relative; z-index: 1; }
+  .hero p { color: rgb(255 255 255 / .85); margin-top: 4px; position: relative; z-index: 1; letter-spacing: .12em; text-transform: uppercase; font-size: 12.5px; font-weight: 600; }
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; position: relative; z-index: 1; }
+  .fact { background: rgb(255 255 255 / .1); backdrop-filter: blur(4px); border-radius: 12px; padding: 10px 12px; }
+  .fact .eyebrow { font-size: 10.5px; }
+  .fact div:last-child { font-weight: 600; margin-top: 2px; font-size: 14px; }
+  @media (max-width: 380px) { .facts { grid-template-columns: 1fr; } }
+
+  .now { display: flex; gap: 14px; align-items: center; }
+  .now .grow h3 { font-size: 17px; margin-top: 4px; }
+  .now .btn { flex: none; }
+
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 10px; color: var(--fg); font: inherit; }
+  .tile .ic { width: 26px; height: 26px; color: var(--accent); }
+  .tile strong { font-family: var(--f-display); font-size: 16px; }
+  .tile .muted { font-size: 12.5px; }
+  .tile:hover { border-color: var(--accent); }
+
+  .map { border-radius: 12px; overflow: hidden; border: 1px solid var(--line); aspect-ratio: 16/10; max-width: 100%; background: var(--surface-2); }
+  .map iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .info-row { display: flex; gap: 12px; align-items: flex-start; }
+  .info-row .ic { width: 20px; height: 20px; color: var(--accent); flex: none; margin-top: 2px; }
+
+  .agenda { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .agenda li { display: grid; grid-template-columns: 64px 1fr; gap: 12px; padding: 11px 0; align-items: start; }
+  .agenda time { font: 700 14px var(--f-body); font-variant-numeric: tabular-nums; color: var(--accent-text); background: var(--accent-soft); border-radius: 999px; text-align: center; padding: 3px 0; }
+  .agenda .t { font-weight: 700; line-height: 1.25; }
+  .agenda .d { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .agenda li.pausa .t { font-weight: 500; color: var(--accent-text); }
+  .agenda li.pausa { padding-block: 6px; }
+  .agenda li.on time { background: var(--accent); color: var(--accent-ink); }
+  .agenda li.done { opacity: .55; }
+
+  .sq.hist { grid-template-columns: 1fr; }
+  .sq.mine { border-color: var(--accent); background: var(--accent-soft); }
+  /* ---------- Fotos ---------- */
+  .pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .picker { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 120px; border-radius: 16px; border: 1.5px dashed var(--line); background: var(--surface); cursor: pointer; font-weight: 600; text-align: center; padding: 12px; }
+  .picker.primary { background: var(--accent); color: var(--accent-ink); border-style: solid; border-color: var(--accent); }
+  .picker .ic { width: 30px; height: 30px; }
+  .picker input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .queue { display: flex; flex-direction: column; gap: 10px; }
+  .qitem { display: grid; grid-template-columns: 76px 1fr auto; gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+  .qitem img { width: 76px; height: 76px; object-fit: cover; border-radius: 8px; }
+  .qitem input { padding: 9px 11px; font-size: 15px; }
+  .qitem .x { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 8px; }
+  .qitem .x .ic { width: 20px; height: 20px; }
+  .progress { height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
+  .progress div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; border-radius: 14px; overflow: hidden; }
+  .grid button { aspect-ratio: 1; border: 0; padding: 0; cursor: pointer; background: var(--surface-2); position: relative; max-width: 100%; }
+  .grid img { width: 100%; height: 100%; object-fit: cover; }
+  .grid .own::after { content: ""; position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; }
+  @media (min-width: 560px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+
+  .lightbox { position: fixed; inset: 0; z-index: 80; background: rgb(5 10 16 / .94); display: flex; flex-direction: column; padding: calc(12px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); color: #fff; }
+  .lightbox .bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .lightbox .stage { flex: 1; display: grid; place-items: center; min-height: 0; padding: 10px 0; }
+  .lightbox img { max-height: 100%; max-width: 100%; object-fit: contain; border-radius: 6px; }
+  .lightbox .meta { display: flex; justify-content: space-between; gap: 12px; align-items: end; }
+  .lightbox .meta strong { display: block; }
+  .lightbox .meta .muted { color: rgb(255 255 255 / .65); }
+  .iconbtn { border: 0; background: rgb(255 255 255 / .12); color: #fff; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; }
+  .iconbtn .ic { width: 20px; height: 20px; }
+  .lightbox .nav { position: absolute; top: 50%; transform: translateY(-50%); }
+  .lightbox .prev { left: max(12px, env(safe-area-inset-left, 0px)); } .lightbox .next { right: max(12px, env(safe-area-inset-right, 0px)); }
+
+  /* ---------- En vivo ---------- */
+  .session-head { border-left: 4px solid var(--accent); padding: 4px 0 4px 14px; }
+  .session-head h2 { font-size: 20px; margin-top: 4px; }
+  .qcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .qcard.closed { opacity: .92; }
+  .qcard h3 { font-size: 18px; font-weight: 700; }
+  .qmeta { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .opts { display: flex; flex-direction: column; gap: 8px; }
+  .opt {
+    display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
+    border: 1.5px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 12px; padding: 13px 14px; font: 500 15px var(--f-body);
+  }
+  .opt .mark { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); flex: none; display: grid; place-items: center; }
+  .opt.checkbox .mark { border-radius: 6px; }
+  .opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+  .opt[aria-pressed="true"] .mark { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .opt .mark .ic { width: 14px; height: 14px; stroke-width: 3; opacity: 0; }
+  .opt[aria-pressed="true"] .mark .ic { opacity: 1; }
+  .scale-pick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .scale-pick button { aspect-ratio: 1; max-width: 100%; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); color: var(--fg); font: 700 22px var(--f-display); cursor: pointer; }
+  .scale-pick button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .scale-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: -6px; }
+  .answered-note { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+
+  /* ---------- Ponente ---------- */
+  .ask textarea { min-height: 84px; }
+  .ask .row { justify-content: space-between; }
+  .sq { display: grid; grid-template-columns: 1fr auto; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 14px 14px 16px; }
+  .sq p { font-size: 15.5px; }
+  .sq .by { font-size: 12.5px; color: var(--muted); margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .sq.answered { opacity: .7; }
+  .vote { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; border: 1.5px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 12px; width: 54px; min-height: 60px; cursor: pointer; font: 700 16px var(--f-body); font-variant-numeric: tabular-nums; }
+  .vote .ic { width: 20px; height: 20px; }
+  .vote[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .vote:disabled { cursor: default; opacity: .6; }
+
+  /* ---------- Encuesta ---------- */
+  .sv { display: flex; flex-direction: column; gap: 12px; }
+  .stars-pick { display: flex; gap: 6px; }
+  .stars-pick button { border: 0; background: transparent; padding: 2px; cursor: pointer; color: var(--line); }
+  .stars-pick button svg { width: 38px; height: 38px; }
+  .stars-pick button.on { color: var(--star); }
+  .thanks { text-align: center; padding: 28px 18px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .thanks .big { width: 64px; height: 64px; border-radius: 50%; background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); display: grid; place-items: center; }
+  .thanks .big .ic { width: 34px; height: 34px; stroke-width: 2.4; }
+
+  /* ---------- hoja inferior ---------- */
+  .sheet-bg { position: fixed; inset: 0; background: rgb(5 10 16 / .5); z-index: 70; display: flex; align-items: flex-end; justify-content: center; }
+  .sheet { background: var(--surface); width: 100%; max-width: 520px; border-radius: 20px 20px 0 0; padding: 22px max(20px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 14px; }
+
+  .demo-banner { background: color-mix(in srgb, var(--warn) 16%, var(--surface)); color: var(--fg); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
 </style>
 </head>
 <body>
-<div class="screen">
-  <div class="top">
-    <div class="grow">
-      <div class="ev" id="evName"></div>
-      <h1 id="sTitle">Cargando…</h1>
-      <div class="who" id="sWho"></div>
-    </div>
-    <div class="right">
-      <div class="stat"><b id="nPeople">0</b><span>participantes</span></div>
-      <span class="pill" id="conn">Conectando</span>
-      <div class="clock" id="clock"></div>
-      <img class="logo" id="logo" src="img/logo-navy.png" alt="SPIE">
-    </div>
+
+<!-- ============ ENTRADA ============ -->
+<section id="gate" hidden>
+  <div class="wrap" style="width:100%; display:grid; place-items:center">
+    <form class="badge" id="gateForm" novalidate>
+      <div class="badge-top">
+        <div class="badge-brand"><span class="sub">SPIE Global Services Energy</span><img src="img/logo-navy.png?v=7" alt="SPIE"></div>
+        <div>
+          <div class="eyebrow" id="gateDate">Evento</div>
+          <h1 id="gateName">Cargando…</h1>
+          <p id="gateSub"></p>
+        </div>
+      </div>
+      <div class="badge-orange"></div>
+      <div class="badge-body">
+        <label class="field" for="nameInput">
+          <span>¿Cómo te llamas?</span>
+          <input id="nameInput" type="text" autocomplete="name" placeholder="Nombre y apellido" maxlength="80">
+        </label>
+        <p class="gate-err" id="gateErr" role="alert" hidden>Escribe tu nombre</p>
+        <button class="btn block gate-go" id="gateBtn" type="submit"><span>Ingresar</span><span class="arr" aria-hidden="true">→</span></button>
+      </div>
+      <div class="badge-strip"><span id="gateVenue"></span></div>
+    </form>
   </div>
-  <div class="body" id="body">
-    <section class="panel" id="stage"></section>
-    <aside class="panel" id="side">
-      <div class="panel-head"><span class="eyebrow">Preguntas al ponente</span><span class="pill" id="sqCount"></span></div>
-      <ul class="sqs" id="sqs"></ul>
-      <div class="qr-card"><div class="qr" id="qr"></div><div><b>Escanea y participa</b><span id="qrUrl"></span></div></div>
-    </aside>
-  </div>
+</section>
+
+<!-- ============ APP ============ -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="wrap">
+      <div class="grow">
+        <h2 id="hName">Evento</h2>
+        <div class="sub" id="hSub"></div>
+      </div>
+      <span class="pill conn" id="conn">Conectando</span>
+      <button class="who" id="whoBtn" type="button" aria-label="Mi perfil"></button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="demo-banner" id="demoBanner" hidden style="margin-top:14px">
+      <strong>Modo demo.</strong> Los datos se guardan solo en este navegador. Abre <a href="pantalla.html" target="_blank">pantalla</a> y <a href="admin.html" target="_blank">admin</a> en otras pestañas para ver el tiempo real.
+    </div>
+
+    <!-- INICIO -->
+    <section class="view" id="v-inicio" data-view="inicio">
+      <div class="hero">
+        <div class="hero-brand"><img src="img/logo-navy.png?v=7" alt="SPIE"></div>
+        <div class="eyebrow" id="iDate"></div>
+        <h1 id="iName"></h1>
+        <p id="iSub"></p>
+        <div class="facts">
+          <div class="fact"><div class="eyebrow">Horario</div><div id="iHours"></div></div>
+          <div class="fact"><div class="eyebrow">Sede</div><div id="iVenue"></div></div>
+        </div>
+      </div>
+
+      <div class="card now" id="iNow" hidden>
+        <div class="grow">
+          <span class="pill live">Ahora</span>
+          <h3 id="iNowTitle"></h3>
+          <p class="muted small" id="iNowSpeaker"></p>
+        </div>
+        <button class="btn sm" data-go="vivo">Participar</button>
+      </div>
+
+      <div class="tiles">
+        <button class="tile" data-go="vivo"><span id="tVivoIc"></span><div><strong>En vivo</strong><div class="muted" id="tVivo">Responde y ve resultados</div></div></button>
+        <button class="tile" data-go="ponente"><span id="tPonIc"></span><div><strong>Pregunta al ponente</strong><div class="muted" id="tPon">Envía tu pregunta</div></div></button>
+        <button class="tile" data-go="fotos"><span id="tFotIc"></span><div><strong>Fotos</strong><div class="muted" id="tFot">Comparte lo que vives</div></div></button>
+        <button class="tile" data-go="encuesta"><span id="tEncIc"></span><div><strong>Encuesta</strong><div class="muted" id="tEnc">Tu opinión del evento</div></div></button>
+      </div>
+
+      <div class="card stack">
+        <div class="eyebrow">Ubicación</div>
+        <div class="info-row"><span id="locIc"></span><div><strong id="iVenue2"></strong><p class="muted small" id="iAddr"></p></div></div>
+        <div class="map" id="iMap"></div>
+        <a class="btn ghost" id="iMaps" target="_blank" rel="noopener">Abrir en Maps</a>
+      </div>
+
+      <div class="card stack" id="iAgendaCard">
+        <div class="eyebrow">Agenda</div>
+        <ul class="agenda" id="iAgenda"></ul>
+      </div>
+
+      <div class="card stack" id="iInfoCard">
+        <div class="eyebrow">Información</div>
+        <p id="iDesc"></p>
+        <div class="info-row" id="iWifiRow"><span id="wifiIc"></span><p id="iWifi"></p></div>
+        <div class="info-row" id="iContactRow"><span id="infoIc"></span><p id="iContact"></p></div>
+      </div>
+    </section>
+
+    <!-- FOTOS -->
+    <section class="view" id="v-fotos" data-view="fotos" hidden>
+      <div class="view-title"><h1>Fotos</h1><span class="pill" id="fCount">0 fotos</span></div>
+      <div class="seg" role="tablist">
+        <button role="tab" aria-selected="true" data-fseg="subir">Compartir</button>
+        <button role="tab" aria-selected="false" data-fseg="galeria">Galería</button>
+      </div>
+
+      <div id="f-subir" class="stack">
+        <div class="pickers">
+          <label class="picker primary"><span id="camIc"></span>Tomar foto
+            <input id="camInput" type="file" accept="image/*" capture="environment">
+          </label>
+          <label class="picker"><span id="upIc"></span>Subir de mi galería
+            <input id="fileInput" type="file" accept="image/*" multiple>
+          </label>
+        </div>
+        <div class="queue" id="queue"></div>
+        <div class="stack" id="queueActions" hidden>
+          <div class="progress" id="upProg" hidden><div></div></div>
+          <button class="btn block" id="publishBtn">Publicar en la galería</button>
+        </div>
+      </div>
+
+      <div id="f-galeria" class="stack" hidden>
+        <div class="seg" role="tablist" style="max-width:260px">
+          <button role="tab" aria-selected="true" data-gfilter="todas">Todas</button>
+          <button role="tab" aria-selected="false" data-gfilter="mias">Mías</button>
+        </div>
+        <div class="grid" id="grid"></div>
+        <div class="empty" id="gEmpty" hidden></div>
+      </div>
+    </section>
+
+    <!-- EN VIVO -->
+    <section class="view" id="v-vivo" data-view="vivo" hidden>
+      <div class="session-head" id="vHead"></div>
+      <div class="stack" id="vList"></div>
+    </section>
+
+    <!-- PONENTE -->
+    <section class="view" id="v-ponente" data-view="ponente" hidden>
+      <div class="session-head" id="pHead"></div>
+      <form class="card stack ask" id="askForm">
+        <label class="field" for="askText"><span>Tu pregunta para el ponente</span>
+          <textarea id="askText" maxlength="400" placeholder="Escribe una pregunta clara y breve"></textarea>
+        </label>
+        <div class="row">
+          <label class="check"><input type="checkbox" id="askAnon"> Enviar sin mi nombre</label>
+          <button class="btn" type="submit" id="askBtn"><span id="sendIc"></span>Enviar</button>
+        </div>
+      </form>
+      <div class="row" style="justify-content:space-between"><div class="eyebrow">Historial de preguntas</div><span class="muted small" id="pCount"></span></div>
+      <div class="stack" id="pList"></div>
+    </section>
+
+    <!-- ENCUESTA -->
+    <section class="view" id="v-encuesta" data-view="encuesta" hidden>
+      <div class="view-title"><h1>Encuesta de satisfacción</h1></div>
+      <div id="sBody" class="stack"></div>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="Secciones">
+    <div class="in">
+      <button data-tab="inicio" aria-current="page"><span data-ic="home"></span>Inicio</button>
+      <button data-tab="fotos"><span data-ic="camera"></span>Fotos</button>
+      <button data-tab="vivo"><span data-ic="live"></span>En vivo<i class="dot" id="dotVivo" hidden></i></button>
+      <button data-tab="ponente"><span data-ic="chat"></span>Ponente</button>
+      <button data-tab="encuesta"><span data-ic="star"></span>Encuesta<i class="dot" id="dotEnc" hidden></i></button>
+    </div>
+  </nav>
 </div>
-<button class="btn soft sm fsbtn" id="fs" type="button">Pantalla completa</button>
+
+<div id="lightbox" class="lightbox" hidden></div>
+<div id="sheet" class="sheet-bg" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="config.js"></script>
-<script src="icons.js"></script>
-<script src="common.js"></script>
+<script src="config.js?v=7"></script>
+<script src="icons.js?v=7"></script>
+<script src="common.js?v=7"></script>
 <script>
 (function () {
   'use strict';
-  const { $, $$, esc, fmt, EID } = EV;
-  const db = EV.init({ storageKey: 'ev-screen-' + EID });
-  const S = { event: null, sessions: [], questions: [], answers: [], sq: [], photos: [], people: 0, rot: 0, slide: 0 };
+  const { $, $$, esc, fmt, toast, errMsg, EID } = EV;
+  const I = window.EV_ICON;
 
-  EV.onStatus((s) => { const c = $('#conn'); c.className = 'pill ' + (s === 'live' ? 'live' : ''); c.textContent = s === 'live' ? 'En vivo' : s === 'demo' ? 'Demo' : 'Reconectando'; });
-  const tick = () => { $('#clock').textContent = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); };
-  tick(); setInterval(tick, 10000);
+  /* -------- estado -------- */
+  const S = {
+    me: EV.me(), event: null, sessions: [], questions: [], answers: [], sq: [], myVotes: new Set(), photos: [],
+    tab: 'inicio', fseg: 'subir', gfilter: 'todas', queue: [], editing: new Set(), lbIndex: -1,
+    seenOpen: new Set(EV.ls.get('ev-seen-' + EID, []))
+  };
 
-  const url = EV.appUrl();
-  EV.qr($('#qr'), url, 256);
-  $('#qrUrl').textContent = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  // íconos estáticos
+  $$('[data-ic]').forEach((n) => (n.outerHTML = I(n.dataset.ic)));
+  const setIc = (id, n) => { const e = document.getElementById(id); if (e) e.outerHTML = I(n); };
+  setIc('tVivoIc', 'live'); setIc('tPonIc', 'chat'); setIc('tFotIc', 'camera'); setIc('tEncIc', 'star');
+  setIc('locIc', 'pin'); setIc('wifiIc', 'wifi'); setIc('infoIc', 'info'); setIc('camIc', 'camera'); setIc('upIc', 'upload'); setIc('sendIc', 'send');
 
-  const cur = () => EV.currentSession(S.event, S.sessions);
-  const askCur = () => EV.askTarget(S.event, S.sessions);
-  const qIds = () => { const c = cur(); return S.questions.filter((q) => q.scope === 'sesion' && c && q.session_id === c.id).map((q) => q.id); };
+  /* -------- arranque -------- */
+  let db;
+  try { db = EV.init(); } catch (e) { document.body.innerHTML = `<p style="padding:24px">${esc(e.message)}</p>`; return; }
+  if (EV.DEMO) $('#demoBanner').hidden = false;
 
-  const L = {
+  EV.onStatus((s) => {
+    const c = $('#conn');
+    c.className = 'pill conn ' + (s === 'live' ? 'live' : '');
+    c.textContent = s === 'live' ? 'En vivo' : s === 'demo' ? 'Demo' : 'Reconectando';
+  });
+
+  async function boot() {
+    try { S.event = await db.one('ev_event', { id: EID }); } catch (e) { console.error(e); }
+    paintEventBasics();
+    if (S.me && S.me.id) {
+      // verificar que la sesión anónima sigue siendo la misma
+      try {
+        const uid = await db.ensureAnon();
+        if (uid !== S.me.id) { S.me.id = uid; await registerParticipant(S.me.name); }
+        else db.update('ev_participants', { id: uid }, { last_seen: new Date().toISOString() }).catch(() => {});
+      } catch (e) { toast(errMsg(e), 'err'); }
+      startApp();
+    } else {
+      $('#gate').hidden = false;
+      setTimeout(() => $('#nameInput').focus(), 100);
+    }
+  }
+
+  function paintEventBasics() {
+    const e = S.event || { name: 'Evento', subtitle: '' };
+    document.title = e.name;
+    $('#gateName').textContent = e.name;
+    $('#gateSub').textContent = e.subtitle || '';
+    $('#gateDate').textContent = e.starts_at ? fmt.date(e.starts_at) : 'Evento';
+    $('#gateVenue').textContent = e.venue ? e.venue.split('·')[0].trim() : '';
+  }
+
+  async function registerParticipant(name) {
+    const uid = await db.ensureAnon();
+    await db.upsert('ev_participants', { id: uid, event_id: EID, name, last_seen: new Date().toISOString() }, 'id');
+    S.me = { id: uid, name };
+    EV.setMe(S.me);
+    return uid;
+  }
+
+  $('#nameInput').addEventListener('input', () => { $('#gateErr').hidden = true; $('#nameInput').classList.remove('bad'); });
+  $('#gateForm').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const name = $('#nameInput').value.trim().replace(/\s+/g, ' ');
+    const err = $('#gateErr');
+    const inp = $('#nameInput');
+    if (name.length < 2) { err.textContent = 'Escribe tu nombre'; err.hidden = false; inp.classList.add('bad'); inp.focus(); return; }
+    err.hidden = true; inp.classList.remove('bad');
+    const b = $('#gateBtn'); b.disabled = true; b.firstElementChild.textContent = 'Ingresando…';
+    try {
+      await registerParticipant(name);
+      EV.log('registro', { name });
+      $('#gate').hidden = true;
+      startApp();
+    } catch (e) {
+      err.textContent = errMsg(e); err.hidden = false;
+    } finally { b.disabled = false; b.firstElementChild.textContent = 'Ingresar'; }
+  });
+
+  let started = false;
+  async function startApp() {
+    if (started) return; started = true;
+    $('#app').hidden = false;
+    paintWho();
+    const initial = (location.hash || '').replace('#', '');
+    go(['inicio', 'fotos', 'vivo', 'ponente', 'encuesta'].includes(initial) ? initial : 'inicio', true);
+    await loadAll();
+    db.subscribe(['ev_event', 'ev_sessions', 'ev_questions', 'ev_answers', 'ev_speaker_q', 'ev_photos'], onChange);
+    // el horario avanza solo: cada 20 s revisa si cambió la conferencia en curso
+    S.curId = (currentSession() || {}).id || null;
+    setInterval(async () => {
+      const id = (currentSession() || {}).id || null;
+      if (id === S.curId) return;
+      S.curId = id;
+      try { await loaders.ev_answers(); } catch {}
+      renderAll();
+    }, 20000);
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  /* -------- carga de datos -------- */
+  const loaders = {
     async ev_event() { S.event = await db.one('ev_event', { id: EID }); },
     async ev_sessions() { S.sessions = await db.select('ev_sessions', { order: ['sort', 'asc'] }); },
     async ev_questions() { S.questions = await db.select('ev_questions', { order: ['sort', 'asc'] }); },
-    async ev_answers() { S.answers = await db.select('ev_answers', { in: ['question_id', qIds()] }); },
-    async ev_speaker_q() { S.sq = await db.select('ev_speaker_q', { order: ['created_at', 'desc'] }); },
-    async ev_photos() { S.photos = (await db.select('ev_photos', { order: ['created_at', 'desc'], limit: 60 })).filter((p) => !p.hidden); },
-    async ev_participants() {
-      try { S.people = await db.participantCount(); } catch { S.people = 0; }
-    }
+    async ev_answers() {
+      const ids = relevantQuestionIds();
+      S.answers = await db.select('ev_answers', { in: ['question_id', ids] });
+    },
+    async ev_speaker_q() {
+      S.sq = await db.select('ev_speaker_q', { order: ['created_at', 'desc'] });
+    },
+    async ev_photos() { S.photos = await db.select('ev_photos', { order: ['created_at', 'desc'] }); }
   };
+  function relevantQuestionIds() {
+    const cur = (currentSession() || {}).id;
+    return S.questions.filter((q) => q.scope === 'encuesta' || q.session_id === cur).map((q) => q.id);
+  }
+
   async function loadAll() {
-    await Promise.all([L.ev_event(), L.ev_sessions(), L.ev_questions(), L.ev_speaker_q(), L.ev_photos(), L.ev_participants()]);
-    await L.ev_answers();
-    render();
+    try {
+      await Promise.all([loaders.ev_event(), loaders.ev_sessions(), loaders.ev_questions(), loaders.ev_speaker_q(), loaders.ev_photos()]);
+      await loaders.ev_answers();
+    } catch (e) { toast(errMsg(e), 'err'); }
+    renderAll();
   }
-  const pend = new Set();
+
+  const pending = new Set();
   const flush = EV.debounce(async () => {
-    const t = Array.from(pend); pend.clear();
-    try { for (const n of t) await L[n](); if (t.includes('ev_event') || t.includes('ev_questions')) await L.ev_answers(); } catch (e) { console.warn(e); }
-    render();
-  }, 300);
-  db.subscribe(['ev_event', 'ev_sessions', 'ev_questions', 'ev_answers', 'ev_speaker_q', 'ev_photos', 'ev_participants'], (t, p) => {
-    if (t === 'ev_answers' && p && p.new && p.new.id) {
-      if (!qIds().includes(p.new.question_id)) return;
-      const i = S.answers.findIndex((a) => a.id === p.new.id || (a.question_id === p.new.question_id && a.participant_id === p.new.participant_id));
-      if (i >= 0) S.answers[i] = p.new; else S.answers.push(p.new);
-      updateStageResults(); return;
+    const t = Array.from(pending); pending.clear();
+    try {
+      for (const name of t) await loaders[name]();
+      if (t.includes('ev_event') || t.includes('ev_questions')) await loaders.ev_answers();
+    } catch (e) { console.warn(e); }
+    renderAll();
+  }, 250);
+
+  function onChange(table, payload) {
+    // parches directos para respuestas (llegan muchas): evita recargar todo
+    if (table === 'ev_answers' && payload && payload.new && payload.new.id) {
+      const row = payload.new;
+      if (!relevantQuestionIds().includes(row.question_id)) return;
+      const i = S.answers.findIndex((a) => a.id === row.id || (a.question_id === row.question_id && a.participant_id === row.participant_id));
+      if (i >= 0) S.answers[i] = row; else S.answers.push(row);
+      renderLiveResults(); return;
     }
-    if (L[t]) { pend.add(t); flush(); }
+    if (!loaders[table]) return;
+    pending.add(table); flush();
+  }
+
+  /* -------- navegación -------- */
+  function go(tab, silent) {
+    S.tab = tab;
+    $$('.view').forEach((v) => (v.hidden = v.dataset.view !== tab));
+    $$('nav.tabs button').forEach((b) => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
+    if (!silent) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    try { history.replaceState(null, '', '#' + tab); } catch {}
+    if (tab === 'vivo') { openQuestions().forEach((q) => S.seenOpen.add(q.id)); EV.ls.set('ev-seen-' + EID, Array.from(S.seenOpen)); }
+    renderDots();
+  }
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-tab],[data-go]');
+    if (t) go(t.dataset.tab || t.dataset.go);
   });
 
-  // el horario avanza solo: revisa cada 20 s si cambió la conferencia en curso
-  let lastCur = null;
-  setInterval(async () => {
-    const id = (cur() || {}).id || null;
-    if (id === lastCur) return;
-    lastCur = id; try { await L.ev_answers(); } catch {} render();
-  }, 20000);
+  function paintWho() {
+    $('#whoBtn').innerHTML = I('user') + `<span>${esc(S.me ? S.me.name.split(' ')[0] : '')}</span>`;
+  }
+  $('#whoBtn').addEventListener('click', () => {
+    const sh = $('#sheet');
+    sh.innerHTML = `<div class="sheet" role="dialog" aria-label="Mi perfil">
+      <div class="eyebrow">Participas como</div>
+      <label class="field" for="rename"><span>Nombre</span><input id="rename" type="text" maxlength="80" value="${esc(S.me.name)}"></label>
+      <div class="row"><button class="btn grow" id="saveName">Guardar nombre</button><button class="btn ghost" id="closeSheet">Cerrar</button></div>
+</div>`;
+    sh.hidden = false;
+    sh.onclick = (e) => { if (e.target === sh || e.target.id === 'closeSheet') sh.hidden = true; };
+    $('#saveName').onclick = async () => {
+      const n = $('#rename').value.trim().replace(/\s+/g, ' ');
+      if (n.length < 2) return toast('Escribe al menos 2 letras', 'err');
+      try { const old = S.me.name; await registerParticipant(n); EV.log('cambio_nombre', { antes: old, ahora: n }); paintWho(); sh.hidden = true; toast('Nombre actualizado'); }
+      catch (e) { toast(errMsg(e), 'err'); }
+    };
+  });
 
-  /* -------- modo de pantalla -------- */
-  function mode() {
-    const h = location.hash.replace('#', '');
-    if (['auto', 'pregunta', 'ponente', 'galeria'].includes(h)) return h;
-    return (S.event && S.event.screen_mode) || 'auto';
-  }
-  window.addEventListener('hashchange', render);
+  /* -------- render general -------- */
+  function currentSession() { return EV.currentSession(S.event, S.sessions); }
+  function askSession() { return EV.askTarget(S.event, S.sessions); }
+  function sessionQuestions() { const c = currentSession(); return c ? S.questions.filter((q) => q.scope === 'sesion' && q.session_id === c.id) : []; }
+  function openQuestions() { return sessionQuestions().filter((q) => q.is_open); }
+  function surveyQuestions() { return S.questions.filter((q) => q.scope === 'encuesta'); }
+  function myAnswer(qid) { return S.answers.find((a) => a.question_id === qid && a.participant_id === S.me.id); }
 
-  function stageQuestions() {
-    const c = cur(); if (!c) return [];
-    const pinned = S.event && S.event.screen_question_id && S.questions.find((q) => q.id === S.event.screen_question_id);
-    if (pinned) return [pinned];
-    return S.questions.filter((q) => q.scope === 'sesion' && q.session_id === c.id && q.is_open);
+  function renderAll() {
+    renderHeader(); renderInicio(); renderFotos(); renderVivo(); renderPonente(); renderEncuesta(); renderDots();
   }
-
-  function render() {
-    const e = S.event || {}; const c = cur();
-    document.title = (e.name || 'Evento') + ' · Pantalla';
-    $('#evName').textContent = e.name || '';
-    $('#sTitle').textContent = c ? c.title : (e.name || 'Bienvenidos');
-    $('#sWho').textContent = c ? EV.fmt.sessLine(c) : (e.subtitle || '');
-    $('#nPeople').textContent = S.people;
-    const m = mode();
-    const body = $('#body');
-    body.classList.toggle('solo', m !== 'auto');
-    $('#side').hidden = m !== 'auto';
-    renderSide(); renderStage(m);
+  function renderDots() {
+    $('#dotVivo').hidden = S.tab === 'vivo' || !openQuestions().some((q) => !S.seenOpen.has(q.id) && !myAnswer(q.id));
+    const sv = surveyQuestions();
+    $('#dotEnc').hidden = S.tab === 'encuesta' || !(S.event && S.event.survey_open) || sv.every((q) => myAnswer(q.id));
   }
-
-  function sqList(limit) {
-    const c = askCur();
-    return S.sq.filter((q) => c && q.session_id === c.id && (q.status === 'approved' || q.status === 'answered'))
-      .sort((a, b) => (b.created_at > a.created_at ? 1 : -1)).slice(0, limit);
-  }
-  function sqHTML(list) {
-    return list.map((q, i) => `<li class="${i === 0 ? 'top1' : ''} ${q.status === 'answered' ? 'done' : ''}"><div class="v t">${EV.fmt.time(q.created_at)}${q.status === 'answered' ? '<small>respondida</small>' : ''}</div>
-      <div><p>${esc(q.text)}</p><div class="by">${q.anonymous ? 'Anónimo' : esc(q.participant_name || '')}</div></div></li>`).join('');
-  }
-  function renderSide() {
-    const list = sqList(5);
-    const sig = list.map((q) => q.id + ':' + q.status).join();
-    const ul = $('#sqs');
-    if (ul.dataset.sig !== sig) { ul.dataset.sig = sig; ul.innerHTML = list.length ? sqHTML(list) : '<li style="grid-template-columns:1fr" class="muted">Aún no hay preguntas.</li>'; }
-    const n = sqList(999).length; $('#sqCount').textContent = n ? `${n}` : '';
+  function renderHeader() {
+    const e = S.event || {}; const cur = currentSession();
+    $('#hName').textContent = e.name || 'Evento';
+    $('#hSub').textContent = cur ? 'Ahora: ' + cur.title : (e.venue || '');
   }
 
-  let stageKey = '';
-  function renderStage(m) {
-    const st = $('#stage');
-    if (m === 'ponente') {
-      const list = sqList(8); const key = 'ponente:' + list.map((q) => q.id + q.status).join();
-      if (key === stageKey) return; stageKey = key; st.className = 'panel';
-      st.innerHTML = `<div class="panel-head"><span class="eyebrow">Preguntas al ponente</span><div class="qr-card" style="margin:0;padding:.5em"><div class="qr" id="qr2" style="width:4.5em;height:4.5em"></div><div><b style="font-size:1em">Envía la tuya</b></div></div></div>
-        <ul class="sqs">${list.length ? sqHTML(list) : '<li style="grid-template-columns:1fr" class="muted">Aún no hay preguntas.</li>'}</ul>`;
-      EV.qr($('#qr2'), url, 160); return;
+  /* -------- INICIO -------- */
+  function renderInicio() {
+    const e = S.event || {};
+    paintEventBasics();
+    $('#iDate').textContent = e.starts_at ? fmt.date(e.starts_at) : '';
+    $('#iName').textContent = e.name || '';
+    $('#iSub').textContent = e.subtitle || '';
+    $('#iHours').textContent = e.starts_at ? `${fmt.time(e.starts_at)} – ${fmt.time(e.ends_at)}` : 'Por confirmar';
+    $('#iVenue').textContent = e.venue ? e.venue.split('·')[0].trim() : 'Por confirmar';
+    $('#iVenue2').textContent = e.venue || '';
+    $('#iAddr').textContent = e.address || '';
+    const mapsUrl = e.maps_url || (e.address ? 'https://maps.google.com/?q=' + encodeURIComponent(e.address) : '');
+    $('#iMaps').href = mapsUrl || '#'; $('#iMaps').hidden = !mapsUrl; $('#iMaps').innerHTML = I('ext') + 'Abrir en Maps';
+    const mapQ = e.address || e.venue;
+    const map = $('#iMap');
+    if (mapQ && map.dataset.q !== mapQ) {
+      map.dataset.q = mapQ;
+      map.innerHTML = `<iframe title="Mapa de la sede" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=${encodeURIComponent(mapQ)}&z=15&output=embed"></iframe>`;
     }
-    if (m === 'galeria' || (m === 'auto' && !stageQuestions().length && S.photos.length)) { renderGallery(st, m === 'galeria'); return; }
-    const qs = stageQuestions();
-    if (!qs.length) {
-      const key = 'idle:' + (cur() || {}).id; if (key === stageKey) return; stageKey = key; st.className = 'panel';
-      st.innerHTML = `<div class="idle"><div style="display:flex;flex-direction:column;align-items:center;gap:1em"><h2>${esc(cur() ? cur().title : 'Bienvenidos')}</h2><p>Escanea y participa</p><div class="qr-card" style="margin:0"><div class="qr" id="qr3" style="width:11em;height:11em"></div></div></div></div>`;
-      EV.qr($('#qr3'), url, 320); return;
-    }
-    const q = qs[S.rot % qs.length];
-    const key = 'q:' + q.id + ':' + q.is_open + ':' + qs.length + ':' + (S.rot % qs.length);
-    if (key !== stageKey) {
-      stageKey = key; st.className = 'panel';
-      st.innerHTML = `<div class="panel-head"><span class="eyebrow">Pregunta en vivo</span><div class="row">${qs.length > 1 ? `<div class="rotor">${qs.map((_, i) => `<i class="${i === S.rot % qs.length ? 'on' : ''}"></i>`).join('')}</div>` : ''}<span class="pill ${q.is_open ? 'live' : ''}">${q.is_open ? 'Votación abierta' : 'Cerrada'}</span></div></div>
-        <h2 class="stage-q">${esc(q.text)}</h2><div class="stage-res"><div id="stageRes"></div></div>`;
-    }
-    updateStageResults();
-  }
-  function updateStageResults() {
-    const host = $('#stageRes'); if (!host) return;
-    const qs = stageQuestions(); if (!qs.length) return;
-    const q = qs[S.rot % qs.length];
-    if (q.qtype === 'abierta') EV.renderResults(host, q, S.answers, { big: true, limit: 8 });
-    else EV.renderResults(host, q, S.answers, { big: true });
-  }
-  // rotar preguntas abiertas cada 15 s
-  setInterval(() => { if (stageQuestions().length > 1 && mode() !== 'galeria' && mode() !== 'ponente') { S.rot++; render(); } }, 15000);
+    map.hidden = !mapQ;
 
-  /* -------- galería -------- */
-  function renderGallery(st, full) {
-    const ph = S.photos;
-    if (!ph.length) {
-      if (stageKey === 'gal-empty') return; stageKey = 'gal-empty'; st.className = 'panel';
-      st.innerHTML = `<div class="idle"><div><h2>Comparte tus fotos</h2></div></div>`; return;
-    }
-    const key = 'gal:' + ph.slice(0, 12).map((p) => p.id).join();
-    if (key === stageKey) return; stageKey = key;
-    st.className = 'panel gal';
-    st.innerHTML = ph.slice(0, 12).map((p, i) => `<div class="slide ${i === 0 ? 'on' : ''}">
-      <div class="bgimg" style="background-image:url('${esc(p.url)}')"></div><img src="${esc(p.url)}" alt="">
-      <div class="cap"><b>${esc(p.participant_name || '')}</b>${p.caption ? ` · ${esc(p.caption)}` : ''} <span class="muted small">${fmt.rel(p.created_at)}</span></div></div>`).join('');
-    S.slide = 0;
-  }
-  setInterval(() => {
-    const sl = $$('#stage .slide'); if (sl.length < 2) return;
-    sl[S.slide % sl.length].classList.remove('on'); S.slide++; sl[S.slide % sl.length].classList.add('on');
-  }, 6000);
+    const cur = currentSession();
+    $('#iNow').hidden = !cur;
+    if (cur) { $('#iNowTitle').textContent = cur.title; $('#iNowSpeaker').textContent = fmt.sessLine(cur); }
 
-  $('#fs').addEventListener('click', () => { const d = document.documentElement; (d.requestFullscreen ? d.requestFullscreen() : Promise.reject()).catch(() => {}); });
+    const nowMs = Date.now();
+    $('#iAgenda').innerHTML = S.sessions.map((s) => {
+      const on = cur && s.id === cur.id;
+      const done = !on && s.ends_at && new Date(s.ends_at).getTime() < nowMs;
+      const line = fmt.sessLine(s);
+      return `<li class="${[on ? 'on' : '', done ? 'done' : '', s.kind === 'pausa' ? 'pausa' : ''].join(' ')}">
+      <time>${fmt.time(s.starts_at) || '—'}</time>
+      <div><div class="t">${esc(s.title)}${on ? ' <span class="pill live" style="margin-left:4px">Ahora</span>' : ''}</div>
+      ${line ? `<div class="d">${esc(line)}</div>` : ''}</div></li>`;
+    }).join('');
+    $('#iAgendaCard').hidden = !S.sessions.length;
+
+    $('#iDesc').textContent = e.description || ''; $('#iDesc').hidden = !e.description;
+    $('#iWifi').textContent = e.wifi || ''; $('#iWifiRow').hidden = !e.wifi;
+    $('#iContact').textContent = e.contact || ''; $('#iContactRow').hidden = !e.contact;
+    $('#iInfoCard').hidden = !(e.description || e.wifi || e.contact);
+
+    const nOpen = openQuestions().length;
+    $('#tVivo').textContent = nOpen ? `${nOpen} ${nOpen === 1 ? 'pregunta abierta' : 'preguntas abiertas'}` : 'Sin preguntas por ahora';
+    const nPh = visiblePhotos().length;
+    $('#tFot').textContent = nPh ? `${nPh} ${nPh === 1 ? 'foto' : 'fotos'} compartidas` : 'Toma o sube fotos';
+    $('#tEnc').textContent = e.survey_open ? (surveyQuestions().every((q) => myAnswer(q.id)) ? 'Ya respondiste, gracias' : 'Abierta, cuéntanos') : 'Al final del evento';
+  }
+
+  /* -------- FOTOS -------- */
+  function visiblePhotos() { return S.photos.filter((p) => !p.hidden || p.participant_id === S.me.id); }
+  $$('[data-fseg]').forEach((b) => b.addEventListener('click', () => {
+    S.fseg = b.dataset.fseg;
+    $$('[data-fseg]').forEach((x) => x.setAttribute('aria-selected', x === b));
+    $('#f-subir').hidden = S.fseg !== 'subir'; $('#f-galeria').hidden = S.fseg !== 'galeria';
+  }));
+  $$('[data-gfilter]').forEach((b) => b.addEventListener('click', () => {
+    S.gfilter = b.dataset.gfilter;
+    $$('[data-gfilter]').forEach((x) => x.setAttribute('aria-selected', x === b));
+    renderFotos();
+  }));
+
+  async function addFiles(files) {
+    for (const f of Array.from(files || [])) {
+      if (!/^image\//.test(f.type) && !/\.(heic|heif)$/i.test(f.name)) { toast(`${f.name} no es una imagen`, 'err'); continue; }
+      try {
+        const { blob: small } = await EV.compressImage(f);
+        const e = S.event || {};
+        const blob = await EV.watermark(small, { title: e.name || '', line: [e.subtitle, e.starts_at ? fmt.date(e.starts_at) : ''].filter(Boolean).join(' · ') });
+        S.queue.push({ id: EV.uuid(), blob, url: URL.createObjectURL(blob), caption: '' });
+      } catch (e) { toast(errMsg(e), 'err'); }
+    }
+    renderQueue();
+  }
+  $('#camInput').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
+  $('#fileInput').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
+
+  function renderQueue() {
+    $('#queue').innerHTML = S.queue.map((q) => `<div class="qitem" data-id="${q.id}">
+      <img src="${q.url}" alt="Vista previa">
+      <input type="text" maxlength="140" placeholder="Agrega una descripción (opcional)" value="${esc(q.caption)}" aria-label="Descripción">
+      <button class="x" aria-label="Quitar">${I('x')}</button></div>`).join('');
+    $('#queueActions').hidden = !S.queue.length;
+    $('#publishBtn').textContent = S.queue.length > 1 ? `Publicar ${S.queue.length} fotos` : 'Publicar en la galería';
+  }
+  $('#queue').addEventListener('input', (e) => {
+    const it = e.target.closest('.qitem'); if (!it) return;
+    const q = S.queue.find((x) => x.id === it.dataset.id); if (q) q.caption = e.target.value;
+  });
+  $('#queue').addEventListener('click', (e) => {
+    const b = e.target.closest('.x'); if (!b) return;
+    const id = b.closest('.qitem').dataset.id;
+    S.queue = S.queue.filter((x) => { if (x.id === id) URL.revokeObjectURL(x.url); return x.id !== id; });
+    renderQueue();
+  });
+  $('#publishBtn').addEventListener('click', async () => {
+    const btn = $('#publishBtn'); btn.disabled = true;
+    const prog = $('#upProg'); prog.hidden = false;
+    const total = S.queue.length; let done = 0;
+    for (const item of S.queue.slice()) {
+      try {
+        const path = `${EID}/${S.me.id}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
+        const url = await db.upload(item.blob, path);
+        await db.insert('ev_photos', { event_id: EID, participant_id: S.me.id, participant_name: S.me.name, path, url, caption: item.caption.trim() || null });
+        EV.log('foto', { path, caption: item.caption.trim() || null });
+        S.queue = S.queue.filter((x) => x !== item); URL.revokeObjectURL(item.url);
+        done++; prog.firstElementChild.style.width = (done / total) * 100 + '%';
+      } catch (e) { toast(errMsg(e), 'err'); break; }
+    }
+    btn.disabled = false; setTimeout(() => { prog.hidden = true; prog.firstElementChild.style.width = 0; }, 600);
+    renderQueue();
+    if (done) {
+      toast(done === 1 ? 'Foto publicada' : `${done} fotos publicadas`);
+      await loaders.ev_photos(); renderFotos(); renderInicio();
+      $('[data-fseg="galeria"]').click();
+    }
+  });
+
+  function galleryList() {
+    const v = visiblePhotos();
+    return S.gfilter === 'mias' ? v.filter((p) => p.participant_id === S.me.id) : v;
+  }
+  function renderFotos() {
+    const all = visiblePhotos();
+    $('#fCount').textContent = `${all.length} ${all.length === 1 ? 'foto' : 'fotos'}`;
+    const list = galleryList();
+    const grid = $('#grid');
+    const sig = list.map((p) => p.id + (p.hidden ? 'h' : '')).join(',');
+    if (grid.dataset.sig !== sig) {
+      grid.dataset.sig = sig;
+      grid.innerHTML = list.map((p, i) => `<button data-i="${i}" class="${p.participant_id === S.me.id ? 'own' : ''}" aria-label="Foto de ${esc(p.participant_name || '')}"><img loading="lazy" src="${esc(p.url)}" alt=""></button>`).join('');
+    }
+    const empty = $('#gEmpty');
+    empty.hidden = !!list.length; grid.hidden = !list.length;
+    empty.innerHTML = I('image') + (S.gfilter === 'mias' ? '<p>Aún no compartes fotos.</p>' : '<p>Aún no hay fotos.</p>');
+  }
+  $('#grid').addEventListener('click', (e) => { const b = e.target.closest('button[data-i]'); if (b) openLightbox(+b.dataset.i); });
+
+  function openLightbox(i) {
+    const list = galleryList(); if (!list[i]) return;
+    S.lbIndex = i; const p = list[i];
+    const lb = $('#lightbox');
+    lb.innerHTML = `<div class="bar"><span class="muted small">${i + 1} / ${list.length}</span>
+        <div class="row"><button class="iconbtn" id="lbSave" aria-label="Guardar en mi teléfono">${I('download')}</button>${p.participant_id === S.me.id ? `<button class="iconbtn" id="lbDel" aria-label="Eliminar mi foto">${I('trash')}</button>` : ''}
+        <button class="iconbtn" id="lbClose" aria-label="Cerrar">${I('x')}</button></div></div>
+      <div class="stage"><img src="${esc(p.url)}" alt="${esc(p.caption || 'Foto del evento')}"></div>
+      ${list.length > 1 ? `<button class="iconbtn nav prev" aria-label="Anterior" style="transform:translateY(-50%) rotate(180deg)">${I('arrow')}</button><button class="iconbtn nav next" aria-label="Siguiente">${I('arrow')}</button>` : ''}
+      <div class="meta"><div><strong>${esc(p.participant_name || 'Participante')}</strong><span class="muted small">${fmt.rel(p.created_at)}${p.hidden ? ' · oculta por moderación' : ''}</span>${p.caption ? `<p style="margin-top:6px">${esc(p.caption)}</p>` : ''}</div></div>`;
+    lb.hidden = false;
+    $('#lbClose').onclick = closeLightbox;
+    $('#lbSave').onclick = async () => {
+      try {
+        const blob = await (await fetch(p.url)).blob();
+        const file = new File([blob], `convencion-hse-${p.id.slice(0, 8)}.jpg`, { type: 'image/jpeg' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); }
+        else EV.download(file.name, blob);
+        EV.log('foto_descargada', { path: p.path });
+      } catch (x) { if (x && x.name !== 'AbortError') window.open(p.url, '_blank'); }
+    };
+    const prev = $('.prev', lb), next = $('.next', lb);
+    if (prev) prev.onclick = () => openLightbox((i - 1 + list.length) % list.length);
+    if (next) next.onclick = () => openLightbox((i + 1) % list.length);
+    const del = $('#lbDel');
+    if (del) del.onclick = async () => {
+      if (del.dataset.armed !== '1') { del.dataset.armed = '1'; del.style.background = 'var(--danger)'; toast('Toca de nuevo para eliminar'); return; }
+      try { await db.remove('ev_photos', { id: p.id }); db.removeFile(p.path).catch(() => {}); EV.log('foto_eliminada', { path: p.path }); closeLightbox(); await loaders.ev_photos(); renderFotos(); toast('Foto eliminada'); }
+      catch (e) { toast(errMsg(e), 'err'); }
+    };
+  }
+  function closeLightbox() { $('#lightbox').hidden = true; S.lbIndex = -1; }
   document.addEventListener('keydown', (e) => {
-    const map = { '1': 'auto', '2': 'pregunta', '3': 'ponente', '4': 'galeria' };
-    if (map[e.key]) location.hash = map[e.key];
-    if (e.key === 'f') $('#fs').click();
-    if (e.key === 'ArrowRight') { S.rot++; render(); }
+    if ($('#lightbox').hidden) return;
+    const n = galleryList().length;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowRight') openLightbox((S.lbIndex + 1) % n);
+    if (e.key === 'ArrowLeft') openLightbox((S.lbIndex - 1 + n) % n);
   });
 
-  loadAll().catch((e) => { $('#sTitle').textContent = EV.errMsg(e); });
+  /* -------- EN VIVO -------- */
+  function sessionHeadHTML(label) {
+    const cur = currentSession();
+    if (!cur) return `<div class="eyebrow">${label}</div><h2>Sin conferencia en este momento</h2>`;
+    return `<div class="eyebrow">${label} · ${fmt.time(cur.starts_at)}${cur.room ? ' · ' + esc(cur.room) : ''}</div><h2>${esc(cur.title)}</h2><p class="muted small">${esc(fmt.sessLine(cur))}</p>`;
+  }
+  const typeHint = { opcion: 'Elige una opción', multiple: 'Elige todas las que apliquen', escala: 'Califica del 1 al 5', nube: 'Responde con una o dos palabras', abierta: 'Respuesta libre' };
+
+  function renderVivo() {
+    $('#vHead').innerHTML = sessionHeadHTML('Conferencia actual');
+    const qs = sessionQuestions().filter((q) => q.is_open || myAnswer(q.id) || S.answers.some((a) => a.question_id === q.id));
+    const list = $('#vList');
+    if (!qs.length) {
+      list.innerHTML = `<div class="card empty">${I('live')}<p>Sin preguntas por ahora.</p></div>`;
+      list.dataset.sig = ''; return;
+    }
+    // ordenar: abiertas sin responder primero
+    qs.sort((a, b) => (b.is_open - a.is_open) || (!!myAnswer(a.id) - !!myAnswer(b.id)) || (a.sort - b.sort));
+    const sigOf = (q) => JSON.stringify([q.id, q.text, q.qtype, q.options, q.is_open, q.show_results, (myAnswer(q.id) || {}).value || null, S.editing.has(q.id)]);
+    const sig = qs.map(sigOf).join('|');
+    if (list.dataset.sig !== sig) {
+      // reconstruir solo tarjetas cambiadas
+      const existing = new Map($$('.qcard', list).map((c) => [c.dataset.id, c]));
+      const frag = document.createDocumentFragment();
+      qs.forEach((q) => {
+        let card = existing.get(q.id);
+        const s = sigOf(q);
+        if (!card || card.dataset.sig !== s) { card = buildQCard(q); card.dataset.sig = s; }
+        frag.appendChild(card);
+      });
+      list.innerHTML = ''; list.appendChild(frag);
+      list.dataset.sig = sig;
+    }
+    renderLiveResults();
+  }
+
+  function buildQCard(q) {
+    const mine = myAnswer(q.id);
+    const answering = q.is_open && (!mine || S.editing.has(q.id));
+    const card = document.createElement('article');
+    card.className = 'qcard' + (q.is_open ? '' : ' closed');
+    card.dataset.id = q.id;
+    const status = q.is_open ? '<span class="pill live">Abierta</span>' : '<span class="pill">Cerrada</span>';
+    let body = '';
+    if (answering) body = answerUI(q, mine);
+    else if (q.show_results || !q.is_open) body = `<div class="res" data-q="${q.id}"></div>`;
+    else body = `<div class="thanks" style="padding:8px"><div class="big">${I('check')}</div><p>Respuesta registrada. Los resultados se mostrarán en pantalla.</p></div>`;
+    const foot = (!answering && mine) ? `<div class="answered-note"><span>${I('check').replace('class="ic ', 'class="ic " style="width:16px;height:16px;vertical-align:-3px;color:var(--ok)" ')} Respondiste</span>${q.is_open ? `<button class="btn ghost sm" data-edit="${q.id}">Cambiar respuesta</button>` : ''}</div>` : '';
+    card.innerHTML = `<div class="qmeta"><span class="eyebrow">${typeHint[q.qtype] || ''}</span>${status}</div><h3>${esc(q.text)}</h3>${body}${foot}`;
+    return card;
+  }
+
+  function answerUI(q, mine) {
+    const v = (mine && mine.value) || {};
+    if (q.qtype === 'opcion') {
+      return `<div class="opts" role="radiogroup">${q.options.map((o, i) => `<button class="opt" data-ans="${q.id}" data-i="${i}" aria-pressed="${v.i === i}"><span class="mark">${I('check')}</span>${esc(o)}</button>`).join('')}</div>`;
+    }
+    if (q.qtype === 'multiple') {
+      const sel = new Set(v.is || []);
+      return `<div class="opts">${q.options.map((o, i) => `<button class="opt checkbox" data-toggle="${q.id}" data-i="${i}" aria-pressed="${sel.has(i)}"><span class="mark">${I('check')}</span>${esc(o)}</button>`).join('')}</div>
+        <button class="btn block" data-send-multi="${q.id}">Enviar respuesta</button>`;
+    }
+    if (q.qtype === 'escala') {
+      return `<div class="scale-pick">${[1, 2, 3, 4, 5].map((n) => `<button data-ans="${q.id}" data-n="${n}" aria-pressed="${v.n === n}">${n}</button>`).join('')}</div>
+        <div class="scale-ends"><span>Nada</span><span>Totalmente</span></div>`;
+    }
+    const isCloud = q.qtype === 'nube';
+    return `<form class="stack" data-text="${q.id}">
+      ${isCloud ? `<input type="text" maxlength="30" placeholder="Una o dos palabras" value="${esc(v.t || '')}" aria-label="Tu respuesta">`
+                : `<textarea maxlength="500" placeholder="Escribe tu respuesta" aria-label="Tu respuesta">${esc(v.t || '')}</textarea>`}
+      <button class="btn block" type="submit">Enviar</button></form>`;
+  }
+
+  async function sendAnswer(q, value) {
+    const row = { event_id: EID, question_id: q.id, participant_id: S.me.id, participant_name: S.me.name, value };
+    try {
+      const saved = await db.upsert('ev_answers', row, 'question_id,participant_id');
+      const i = S.answers.findIndex((a) => a.question_id === q.id && a.participant_id === S.me.id);
+      if (i >= 0) S.answers[i] = { ...S.answers[i], ...saved }; else S.answers.push(saved);
+      S.editing.delete(q.id);
+      EV.log(q.scope === 'encuesta' ? 'encuesta' : 'respuesta', { pregunta: q.text, valor: value });
+      return true;
+    } catch (e) { toast(errMsg(e), 'err'); return false; }
+  }
+
+  $('#vList').addEventListener('click', async (e) => {
+    const t = e.target.closest('[data-ans],[data-toggle],[data-send-multi],[data-edit]');
+    if (!t) return;
+    if (t.dataset.edit) { S.editing.add(t.dataset.edit); renderVivo(); return; }
+    if (t.dataset.toggle) { t.setAttribute('aria-pressed', t.getAttribute('aria-pressed') !== 'true'); return; }
+    if (t.dataset.sendMulti) {
+      const q = S.questions.find((x) => x.id === t.dataset.sendMulti);
+      const is = $$(`[data-toggle="${q.id}"]`, t.closest('.qcard')).filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => +b.dataset.i);
+      if (!is.length) return toast('Elige al menos una opción', 'err');
+      t.disabled = true; if (await sendAnswer(q, { is })) toast('Respuesta enviada'); t.disabled = false;
+      renderVivo(); return;
+    }
+    const q = S.questions.find((x) => x.id === t.dataset.ans); if (!q) return;
+    $$(`[data-ans="${q.id}"]`).forEach((b) => b.setAttribute('aria-pressed', b === t));
+    const value = q.qtype === 'escala' ? { n: +t.dataset.n } : { i: +t.dataset.i };
+    if (await sendAnswer(q, value)) toast('Respuesta enviada');
+    renderVivo();
+  });
+  $('#vList').addEventListener('submit', async (e) => {
+    const f = e.target.closest('[data-text]'); if (!f) return;
+    e.preventDefault();
+    const q = S.questions.find((x) => x.id === f.dataset.text);
+    const val = (f.querySelector('input,textarea').value || '').trim();
+    if (!val) return toast('Escribe tu respuesta', 'err');
+    f.querySelector('button').disabled = true;
+    if (await sendAnswer(q, { t: val })) toast('Respuesta enviada');
+    renderVivo();
+  });
+
+  function renderLiveResults() {
+    $$('#vList .res').forEach((host) => {
+      const q = S.questions.find((x) => x.id === host.dataset.q); if (!q) return;
+      const m = myAnswer(q.id); const v = m && m.value || {};
+      EV.renderResults(host, q, S.answers, { mine: q.qtype === 'opcion' ? v.i : q.qtype === 'multiple' ? v.is : q.qtype === 'escala' ? v.n : null });
+    });
+  }
+
+  /* -------- PONENTE -------- */
+  function ponenteHeadHTML(t) {
+    if (!t) return `<div class="eyebrow">Preguntas al ponente</div><h2>Sin conferencia en este momento</h2>`;
+    return `<div class="eyebrow">Preguntas para · ${fmt.time(t.starts_at)}</div><h2>${esc(t.title)}</h2><p class="muted small">${esc(fmt.sessLine(t))}</p>`;
+  }
+  function renderPonente() {
+    const t = askSession();
+    $('#pHead').innerHTML = ponenteHeadHTML(t);
+    $('#askForm').hidden = !t;
+    const list = t ? S.sq.filter((q) => q.session_id === t.id && (q.status === 'approved' || q.status === 'answered' || q.participant_id === S.me.id)) : [];
+    list.sort((a, b) => (b.created_at > a.created_at ? 1 : -1));
+    $('#pCount').textContent = list.length ? `${list.length} ${list.length === 1 ? 'pregunta' : 'preguntas'}` : '';
+    $('#pList').innerHTML = list.length ? list.map((q) => {
+      const own = q.participant_id === S.me.id;
+      const tag = q.status === 'answered' ? '<span class="pill ok">Respondida</span>' : q.status === 'hidden' ? '<span class="pill">Oculta</span>' : '';
+      return `<div class="sq hist ${own ? 'mine' : ''} ${q.status === 'answered' ? 'answered' : ''}"><div><p>${esc(q.text)}</p>
+        <div class="by"><span>${q.anonymous ? 'Anónimo' : esc(q.participant_name || 'Participante')}${own ? ' (tú)' : ''}</span><span>·</span><span>${fmt.time(q.created_at)}</span>${tag}</div></div></div>`;
+    }).join('') : (t ? `<div class="card empty">${I('chat')}<p>Aún no hay preguntas.</p></div>` : '');
+  }
+  $('#askForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const t = askSession(); if (!t) return;
+    const text = $('#askText').value.trim();
+    if (text.length < 3) return toast('Escribe tu pregunta', 'err');
+    const b = $('#askBtn'); b.disabled = true;
+    try {
+      const row = await db.insert('ev_speaker_q', { event_id: EID, session_id: t.id, participant_id: S.me.id, participant_name: S.me.name, anonymous: $('#askAnon').checked, text });
+      S.sq.unshift(row);
+      EV.log('pregunta_ponente', { sesion: t.title, texto: text, anonima: $('#askAnon').checked });
+      $('#askText').value = '';
+      toast('Pregunta enviada');
+      renderPonente();
+    } catch (err) { toast(errMsg(err), 'err'); }
+    b.disabled = false;
+  });
+
+  /* -------- ENCUESTA -------- */
+  const svDraft = {};
+  function renderEncuesta() {
+    const host = $('#sBody');
+    const e = S.event || {};
+    const qs = surveyQuestions();
+    if (!e.survey_open) {
+      host.innerHTML = `<div class="card empty">${I('star')}<p>Disponible al final del evento.</p></div>`;
+      host.dataset.mode = 'closed'; return;
+    }
+    const done = qs.length && qs.every((q) => myAnswer(q.id));
+    const editing = S.editing.has('survey');
+    if (done && !editing) {
+      if (host.dataset.mode === 'done') return;
+      host.dataset.mode = 'done';
+      host.innerHTML = `<div class="card thanks"><div class="big">${I('check')}</div><h2>¡Gracias, ${esc(S.me.name.split(' ')[0])}!</h2><p class="muted">Tus respuestas quedaron registradas.</p><button class="btn ghost sm" id="svEdit">Editar mis respuestas</button></div>`;
+      $('#svEdit').onclick = () => { S.editing.add('survey'); host.dataset.mode = ''; renderEncuesta(); };
+      return;
+    }
+    if (host.dataset.mode === 'form' && host.dataset.sig === qs.map((q) => q.id + q.text + q.qtype).join()) return; // no pisar lo que está escribiendo
+    host.dataset.mode = 'form'; host.dataset.sig = qs.map((q) => q.id + q.text + q.qtype).join();
+    qs.forEach((q) => { const m = myAnswer(q.id); if (m && svDraft[q.id] === undefined) svDraft[q.id] = m.value; });
+    host.innerHTML = qs.map((q, idx) => {
+      const v = svDraft[q.id] || {};
+      let ui = '';
+      if (q.qtype === 'escala') ui = `<div class="stars-pick" data-sv="${q.id}">${[1, 2, 3, 4, 5].map((n) => `<button type="button" data-n="${n}" class="${(v.n || 0) >= n ? 'on' : ''}" aria-label="${n} de 5"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg></button>`).join('')}</div>`;
+      else if (q.qtype === 'opcion') ui = `<div class="opts" data-sv="${q.id}">${q.options.map((o, i) => `<button type="button" class="opt" data-i="${i}" aria-pressed="${v.i === i}"><span class="mark">${I('check')}</span>${esc(o)}</button>`).join('')}</div>`;
+      else if (q.qtype === 'multiple') ui = `<div class="opts" data-sv="${q.id}" data-multi="1">${q.options.map((o, i) => `<button type="button" class="opt checkbox" data-i="${i}" aria-pressed="${(v.is || []).includes(i)}"><span class="mark">${I('check')}</span>${esc(o)}</button>`).join('')}</div>`;
+      else ui = `<textarea data-svt="${q.id}" maxlength="600" placeholder="Opcional">${esc(v.t || '')}</textarea>`;
+      return `<div class="card sv"><div class="eyebrow">${idx + 1} de ${qs.length}</div><h3 style="font-size:17px">${esc(q.text)}</h3>${ui}</div>`;
+    }).join('') + `<button class="btn block" id="svSend">Enviar encuesta</button>`;
+  }
+  $('#sBody').addEventListener('click', async (e) => {
+    const star = e.target.closest('.stars-pick button');
+    if (star) {
+      const id = star.parentElement.dataset.sv; const n = +star.dataset.n; svDraft[id] = { n };
+      $$('button', star.parentElement).forEach((b) => b.classList.toggle('on', +b.dataset.n <= n)); return;
+    }
+    const opt = e.target.closest('[data-sv] .opt');
+    if (opt) {
+      const box = opt.parentElement; const id = box.dataset.sv; const i = +opt.dataset.i;
+      if (box.dataset.multi) { opt.setAttribute('aria-pressed', opt.getAttribute('aria-pressed') !== 'true'); svDraft[id] = { is: $$('.opt', box).filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => +b.dataset.i) }; }
+      else { $$('.opt', box).forEach((b) => b.setAttribute('aria-pressed', b === opt)); svDraft[id] = { i }; }
+      return;
+    }
+    if (e.target.id === 'svSend') {
+      const qs = surveyQuestions();
+      $$('[data-svt]').forEach((t) => { svDraft[t.dataset.svt] = { t: t.value.trim() }; });
+      const missing = qs.filter((q) => q.qtype !== 'abierta' && !svDraft[q.id]);
+      if (missing.length) return toast(`Falta responder: ${missing[0].text}`, 'err');
+      e.target.disabled = true;
+      let ok = true;
+      for (const q of qs) {
+        const v = svDraft[q.id];
+        if (!v || (q.qtype === 'abierta' && !v.t)) continue;
+        if (!(await sendAnswer(q, v))) { ok = false; break; }
+      }
+      // marcar abiertas vacías como respondidas para cerrar el flujo
+      for (const q of qs.filter((x) => x.qtype === 'abierta' && !myAnswer(x.id))) await sendAnswer(q, { t: '' });
+      e.target.disabled = false;
+      if (ok) { S.editing.delete('survey'); $('#sBody').dataset.mode = ''; toast('¡Gracias por tu opinión!'); renderEncuesta(); renderDots(); renderInicio(); }
+    }
+  });
+
+  boot();
 })();
 </script>
 </body>
