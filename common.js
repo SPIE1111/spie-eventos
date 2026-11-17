@@ -90,23 +90,36 @@
     });
     const scope = (table, q) => q.eq(table === 'ev_event' ? 'id' : 'event_id', EID);
     const ok = ({ data, error }) => { if (error) throw error; return data; };
+    let checked = null;
+    // Un UPDATE/DELETE sin permiso no da error en Supabase: simplemente no cambia nada.
+    // Se pide la fila de vuelta y, si no regresa ninguna, se avisa en lugar de dar el cambio por hecho.
+    const noRows = () => { checked = null; const e = new Error('El cambio no se guardó: tu sesión ya no tiene permiso. Escribe el PIN de nuevo.'); e.code = 'NO_ROWS'; window.dispatchEvent(new CustomEvent('ev:noperm')); return e; };
 
     return {
       mode: 'supabase', client: sb,
       async uid() { const { data } = await sb.auth.getSession(); return data.session?.user?.id || null; },
       async ensureAnon() {
-        const id = await this.uid(); if (id) return id;
-        const { data, error } = await sb.auth.signInAnonymously(); if (error) throw error; return data.user.id;
+        const id = await this.uid();
+        if (id) {
+          // una vez por carga: confirmar con el servidor que ese usuario sigue existiendo
+          // (si se borró en Supabase, la sesión guardada en el teléfono ya no sirve)
+          if (checked === id) return id;
+          const { data, error } = await sb.auth.getUser();
+          if (!error && data && data.user && data.user.id === id) { checked = id; return id; }
+          return this.resetAnon();
+        }
+        const { data, error } = await sb.auth.signInAnonymously(); if (error) throw error; checked = data.user.id; return data.user.id;
       },
       // sesión nueva desde cero (si la guardada ya no sirve)
       async resetAnon() {
         try { await sb.auth.signOut({ scope: 'local' }); } catch {}
-        const { data, error } = await sb.auth.signInAnonymously(); if (error) throw error; return data.user.id;
+        const { data, error } = await sb.auth.signInAnonymously(); if (error) throw error; checked = data.user.id; return data.user.id;
       },
       async signIn(email, password) { ok(await sb.auth.signInWithPassword({ email, password })); return this.uid(); },
       async signOut() { await sb.auth.signOut(); },
       async currentEmail() { const { data } = await sb.auth.getSession(); return data.session?.user?.email || null; },
       async claimAdmin(pin) {
+        checked = null;              // revalidar siempre con el servidor antes de reclamar el rol
         await this.ensureAnon();
         return !!ok(await sb.rpc('ev_claim_admin', { p_pin: pin }));
       },
@@ -143,12 +156,16 @@
       async update(table, match, patch) {
         let q = sb.from(table).update(patch);
         for (const [k, v] of Object.entries(match)) q = q.eq(k, v);
-        ok(await q);
+        const rows = ok(await q.select());
+        if (!rows || !rows.length) throw noRows();
+        return rows;
       },
       async remove(table, match) {
         let q = sb.from(table).delete();
         for (const [k, v] of Object.entries(match)) q = q.eq(k, v);
-        ok(await q);
+        const rows = ok(await q.select());
+        if (!rows || !rows.length) throw noRows();
+        return rows;
       },
       async upload(blob, path) {
         const { error } = await sb.storage.from('ev-photos').upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false });
