@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=12">
+<link rel="stylesheet" href="styles.css?v=13">
 <style>
   body { min-height: 100dvh; }
   .layout { display: grid; grid-template-columns: 230px 1fr; min-height: 100dvh; }
@@ -291,9 +291,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="config.js?v=12"></script>
-<script src="icons.js?v=12"></script>
-<script src="common.js?v=12"></script>
+<script src="config.js?v=13"></script>
+<script src="icons.js?v=13"></script>
+<script src="common.js?v=13"></script>
 <script>
 (function () {
   'use strict';
@@ -652,7 +652,7 @@
   }
 
   /* -------- REGISTRO -------- */
-  const actName = { registro: 'Se registró', foto: 'Subió foto', foto_descargada: 'Descargó foto', foto_eliminada: 'Eliminó foto', respuesta: 'Respondió', encuesta: 'Respondió encuesta', pregunta_ponente: 'Preguntó al ponente', voto_pregunta: 'Votó pregunta', cambio_nombre: 'Cambió nombre', admin_sesion: 'Cambió conferencia' };
+  const actName = { registro: 'Se registró', foto: 'Subió foto', foto_descargada: 'Descargó foto', foto_eliminada: 'Eliminó foto', respuesta: 'Respondió', encuesta: 'Respondió encuesta', pregunta_ponente: 'Preguntó al ponente', voto_pregunta: 'Votó pregunta', cambio_nombre: 'Cambió nombre', salida: 'Cerró sesión', admin_sesion: 'Cambió conferencia' };
   function actDetail(a) {
     const d = a.detail || {};
     if (a.action === 'vista') return d.seccion || '';
