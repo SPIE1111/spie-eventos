@@ -7,13 +7,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Evento en vivo</title>
-<link rel="manifest" href="manifest.json?v=12">
+<link rel="manifest" href="manifest.json?v=13">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=12">
+<link rel="stylesheet" href="styles.css?v=13">
 <style>
   body { min-height: 100dvh; }
   .wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -38,6 +38,8 @@
   .badge-body input { background: #f4f5f9; color: #0f1e5a; border-color: #d8dbe8; font-size: 18px; }
   .badge-body .muted { color: #56608a; font-size: 13.5px; }
   .badge-body .btn { background: #ff9600; color: #0f1e5a; font-weight: 700; }
+  .logout-btn { margin-top: 4px; color: var(--danger); justify-content: center; gap: 8px; }
+  .logout-btn.armed { background: color-mix(in srgb, var(--danger) 10%, transparent); border-color: var(--danger); }
   .badge-strip { padding: 12px 22px; border-top: 1px dashed #d8dbe8; font: 600 11px var(--f-body); color: #56608a; letter-spacing: .08em; text-transform: uppercase; }
   .badge-strip:empty, .badge-strip:has(span:empty) { display: none; }
   .gate-err { margin: -6px 0 0; color: var(--danger); font-weight: 600; font-size: 14px; }
@@ -231,7 +233,7 @@
           <span>¿Cómo te llamas?</span>
           <input id="nameInput" type="text" autocomplete="name" placeholder="Nombre y apellido" maxlength="80">
         </label>
-        <p class="gate-err" id="gateErr" role="alert" hidden>Escribe tu nombre</p>
+        <p class="gate-err" id="gateErr" role="alert" hidden>Ingresa un nombre para continuar</p>
         <button class="btn block gate-go" id="gateBtn" type="submit"><span>Ingresar</span><span class="arr" aria-hidden="true">→</span></button>
       </div>
       <div class="badge-strip"><span id="gateVenue"></span></div>
@@ -384,9 +386,9 @@
 <div id="sheet" class="sheet-bg" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="config.js?v=12"></script>
-<script src="icons.js?v=12"></script>
-<script src="common.js?v=12"></script>
+<script src="config.js?v=13"></script>
+<script src="icons.js?v=13"></script>
+<script src="common.js?v=13"></script>
 <script>
 (function () {
   'use strict';
@@ -477,7 +479,7 @@
     const name = $('#nameInput').value.trim().replace(/\s+/g, ' ');
     const err = $('#gateErr');
     const inp = $('#nameInput');
-    if (name.length < 2) { err.textContent = 'Escribe tu nombre'; err.hidden = false; inp.classList.add('bad'); inp.focus(); return; }
+    if (name.length < 4) { err.textContent = 'Ingresa un nombre para continuar'; err.hidden = false; inp.classList.add('bad'); inp.focus(); return; }
     err.hidden = true; inp.classList.remove('bad');
     const b = $('#gateBtn'); b.disabled = true; b.firstElementChild.textContent = 'Ingresando…';
     try {
@@ -585,14 +587,25 @@
       <div class="eyebrow">Participas como</div>
       <label class="field" for="rename"><span>Nombre</span><input id="rename" type="text" maxlength="80" value="${esc(S.me.name)}"></label>
       <div class="row"><button class="btn grow" id="saveName">Guardar nombre</button><button class="btn ghost" id="closeSheet">Cerrar</button></div>
+      <button class="btn ghost block logout-btn" id="logoutBtn">${I('logout')}<span>Cerrar sesión</span></button>
 </div>`;
     sh.hidden = false;
     sh.onclick = (e) => { if (e.target === sh || e.target.id === 'closeSheet') sh.hidden = true; };
     $('#saveName').onclick = async () => {
       const n = $('#rename').value.trim().replace(/\s+/g, ' ');
-      if (n.length < 2) return toast('Escribe al menos 2 letras', 'err');
+      if (n.length < 4) return toast('Ingresa un nombre para continuar', 'err');
       try { const old = S.me.name; await registerParticipant(n); EV.log('cambio_nombre', { antes: old, ahora: n }); paintWho(); sh.hidden = true; toast('Nombre actualizado'); }
       catch (e) { toast(errMsg(e), 'err'); }
+    };
+    // cerrar sesión: pide confirmar con un segundo toque y vuelve a la pantalla de entrada
+    $('#logoutBtn').onclick = async (e) => {
+      const b = e.currentTarget;
+      if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.lastElementChild.textContent = 'Toca otra vez para cerrar sesión'; b.classList.add('armed'); return; }
+      b.disabled = true;
+      try { await EV.log('salida', { name: S.me.name }); } catch {}
+      EV.clearMe();
+      try { await db.signOut(); } catch {}
+      location.hash = ''; location.reload();
     };
   });
 
