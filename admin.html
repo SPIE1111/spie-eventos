@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=11">
+<link rel="stylesheet" href="styles.css?v=12">
 <style>
   body { min-height: 100dvh; }
   .layout { display: grid; grid-template-columns: 230px 1fr; min-height: 100dvh; }
@@ -291,9 +291,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="config.js?v=11"></script>
-<script src="icons.js?v=11"></script>
-<script src="common.js?v=11"></script>
+<script src="config.js?v=12"></script>
+<script src="icons.js?v=12"></script>
+<script src="common.js?v=12"></script>
 <script>
 (function () {
   'use strict';
@@ -313,12 +313,23 @@
     if (await db.uid() && await db.isAdmin()) return start();
     $('#login').hidden = false;
   }
+  // si la sesión de moderador deja de ser válida (p. ej. se borraron usuarios en Supabase), volver a pedir el PIN
+  let askingPin = false;
+  function askPinAgain(msg) {
+    if (EV.DEMO || askingPin) return; askingPin = true;
+    $('#lPin').value = ''; const err = $('#lErr'); err.textContent = msg; err.hidden = false;
+    $('#login').hidden = false; setTimeout(() => $('#lPin').focus(), 50);
+  }
+  window.addEventListener('ev:noperm', () => askPinAgain('Tu sesión de moderador ya no es válida. Escribe el PIN para seguir; el último cambio no se guardó.'));
+  setInterval(async () => { if (!EV.DEMO && !askingPin && $('#login').hidden && !(await db.isAdmin().catch(() => true))) askPinAgain('Tu sesión de moderador terminó. Escribe el PIN para seguir.'); }, 60000);
   $('#loginForm').addEventListener('submit', async (e) => {
     e.preventDefault(); const err = $('#lErr'); err.hidden = true; $('#lBtn').disabled = true;
     try {
       const okPin = await db.claimAdmin($('#lPin').value.trim());
       if (!okPin) throw new Error('PIN incorrecto.');
-      $('#login').hidden = true; start();
+      $('#login').hidden = true; askingPin = false; $('#lErr').hidden = true;
+      if (typeof S !== 'undefined' && S.event) { await Promise.all(Object.values(L).map((f) => f().catch(() => {}))); renderAll(); toast('Sesión de moderador renovada'); }
+      else start();
     } catch (x) { err.textContent = /function .*ev_claim_admin|Could not find the function/i.test(x.message) ? 'Falta ejecutar supabase/admin-pin.sql en Supabase.' : errMsg(x); err.hidden = false; }
     $('#lBtn').disabled = false;
   });
@@ -446,7 +457,7 @@
     if (b.dataset.pin) { const on = S.event.screen_question_id !== b.dataset.pin; patchEvent(on ? { screen_question_id: b.dataset.pin, screen_mode: 'pregunta' } : { screen_question_id: null }, on ? 'Se muestra en pantalla' : 'Pantalla actualizada'); }
     if (b.dataset.reset) {
       if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.innerHTML = 'Confirmar: borrar respuestas'; b.classList.add('danger'); return; }
-      try { await db.remove('ev_answers', { question_id: b.dataset.reset }); S.answers = S.answers.filter((a) => a.question_id !== b.dataset.reset); $('#liveList').dataset.sig = ''; renderVivo(); toast('Respuestas borradas'); } catch (x) { toast(errMsg(x), 'err'); }
+      try { if (S.answers.some((a) => a.question_id === b.dataset.reset)) await db.remove('ev_answers', { question_id: b.dataset.reset }); S.answers = S.answers.filter((a) => a.question_id !== b.dataset.reset); $('#liveList').dataset.sig = ''; renderVivo(); toast('Respuestas borradas'); } catch (x) { toast(errMsg(x), 'err'); }
     }
   });
 
