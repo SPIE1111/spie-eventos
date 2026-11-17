@@ -590,6 +590,7 @@
     // participante
     me() { return ls.get('ev-me-' + EID); },
     setMe(v) { ls.set('ev-me-' + EID, v); },
+    clearMe() { ls.del('ev-me-' + EID); },
     async log(action, detail) {
       const me = this.me(); if (!me || !this.db) return;
       try { await this.db.insertQuiet('ev_activity', { event_id: EID, participant_id: me.id, participant_name: me.name, action, detail: detail || null }); } catch {}
