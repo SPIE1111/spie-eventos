@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Panel del moderador</title>
-<link rel="icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png?v=15">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=14">
+<link rel="stylesheet" href="styles.css?v=15">
 <style>
   body { min-height: 100dvh; }
   .layout { display: grid; grid-template-columns: 230px 1fr; min-height: 100dvh; }
@@ -71,6 +71,7 @@
   .modes button[aria-pressed="true"] .ic { color: var(--accent); }
   @media (max-width: 520px) { .modes { grid-template-columns: 1fr 1fr; } }
 
+  .two > *, .stack { min-width: 0; }
   .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
   table { border-collapse: collapse; width: 100%; font-size: 14px; }
   th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -291,9 +292,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="config.js?v=14"></script>
-<script src="icons.js?v=14"></script>
-<script src="common.js?v=14"></script>
+<script src="config.js?v=15"></script>
+<script src="icons.js?v=15"></script>
+<script src="common.js?v=15"></script>
 <script>
 (function () {
   'use strict';
