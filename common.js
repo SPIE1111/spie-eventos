@@ -9,7 +9,7 @@
   const DEMO = !C.SUPABASE_URL || !C.SUPABASE_ANON_KEY;
   // Versión de la app. Si en GitHub hay una más nueva (version.json), la página se recarga sola:
   // así ningún teléfono se queda con una versión vieja abierta durante el evento.
-  const APP_VERSION = '14';
+  const APP_VERSION = '15';
   if (location.protocol.startsWith('http') && !/localhost|127\.0\.0\.1/.test(location.hostname)) {
     const checkVersion = async () => {
       try {
