@@ -7,6 +7,22 @@
   const C = window.EVENT_CONFIG || {};
   const EID = C.EVENT_ID || 'evento-2026';
   const DEMO = !C.SUPABASE_URL || !C.SUPABASE_ANON_KEY;
+  // Versión de la app. Si en GitHub hay una más nueva (version.json), la página se recarga sola:
+  // así ningún teléfono se queda con una versión vieja abierta durante el evento.
+  const APP_VERSION = '14';
+  if (location.protocol.startsWith('http') && !/localhost|127\.0\.0\.1/.test(location.hostname)) {
+    const checkVersion = async () => {
+      try {
+        const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+        if (!r.ok) return;
+        const v = String((await r.json()).version || '');
+        if (v && v !== APP_VERSION && !sessionStorage.getItem('ev-reloaded-' + v)) { sessionStorage.setItem('ev-reloaded-' + v, '1'); location.reload(); }
+      } catch {}
+    };
+    setInterval(checkVersion, 60000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkVersion(); });
+    setTimeout(checkVersion, 4000);
+  }
   // En el sitio publicado el modo demo nunca debe pasar desapercibido: los datos no se compartirían
   if (DEMO && /github\.io$/.test(location.hostname)) {
     const warn = () => { const d = document.createElement('div'); d.textContent = 'La app no está conectada a la base de datos: revisa config.js en GitHub.';
